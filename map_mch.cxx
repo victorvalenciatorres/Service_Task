@@ -560,12 +560,11 @@ for (auto isBendingPlane : {true, false}) {
 
         svgChamber(wSeg, i+1, isBendingPlane);
         
-        // Write the HTML 
+        // Write the output HTML 
         wSeg.writeHTML(outv);
        
     } 
 }    
-
 
 
 
