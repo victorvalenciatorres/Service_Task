@@ -14,7 +14,6 @@
 /// @author  Victor Valencia 
 
 
-//INCLUDES
 #include "boost/program_options.hpp"
 #include "MCHMappingInterface/CathodeSegmentation.h"
 #include "MCHMappingInterface/Segmentation.h"
@@ -41,29 +40,21 @@ using namespace o2::mch::mapping;
 
 namespace po = boost::program_options;
 
-//function taking a string and returns two space-separated values
-
-std::pair<double, double> parsePoint(std::string ps)
-{
-  int ix = ps.find_first_of(' ');
-
-  auto first = ps.substr(0, ix);
-  auto second = ps.substr(ix + 1, ps.size() - ix - 1);
-  return std::make_pair(std::stod(first), std::stod(second));
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Function with 156 translation offsets to not overlap the deId of each chamber:
 
 std::pair<double, double> getTranslationOffset(int deId) {
+
     std::map<int, std::pair<double, double>> translationOffsets = {
+
+        //1st type of Chamber Shape (chambers 1,2,3,4)
         {100, {5.0, 0.0}}, {101, {-5.0, 0.0}}, {102, {-5.0, 10.0}}, {103, {5.0, 10.0}},
         {200, {5.0, 0.0}}, {201, {-5.0, 0.0}}, {202, {-5.0, 10.0}}, {203, {5.0, 10.0}},
         {300, {5.0, 0.0}}, {301, {-5.0, 0.0}}, {302, {-5.0, 10.0}}, {303, {5.0, 10.0}},
         {400, {5.0, 0.0}}, {401, {-5.0, 0.0}}, {402, {-5.0, 10.0}}, {403, {5.0, 10.0}},
-
+        //2nd type of Chamber Shape (chambers 5,6)
         {500, {5.0, 5.0}}, {501, {5.0, -10.0}}, {502, {5.0, -20.0}}, {503, {5.0, -30.0}},
         {504, {5.0, -40.0}}, {505, {0, -40.0}}, {506, {0, -30.0}}, {507, {0, -20.0}}, {508, {0, -10.0}},
         {509, {0.0, 5.0}}, {510, {0.0, 20.0}}, {511, {0.0, 30.0}}, {512, {0.0, 40.0}},
@@ -73,7 +64,7 @@ std::pair<double, double> getTranslationOffset(int deId) {
         {609, {0.0, 5.0}}, {610, {0.0, 20.0}}, {611, {0.0, 30.0}}, {612, {0.0, 40.0}},
         {613, {0.0, 50.0}}, {614, {5.0, 50.0}}, {615, {5.0, 40.0}}, {616, {5.0, 30.0}}, {617, {5.0, 20.0}},
 
-
+        //3rd type of Chamber Shape (chambers 7,8,9,10)
         {700, {3.0, 5.0}}, {701, {3.0, -10.0}}, {702, {3.0, -20.0}}, {703, {3.0, -30.0}}, {704, {3.0, -50.0}}, {705, {3, -60.0}}, {706, {3, -80.0}}, {707, {0, -80.0}}, {708, {0, -60.0}}, {709, {0.0, -50}}, {710, {0.0, -30.0}}, {711, {0.0, -20.0}}, {712, {0.0, -10.0}}, {713, {0.0, 5.0}}, {714, {0.0, 20.0}}, {715, {0.0, 30.0}}, {716, {0.0, 42.0}}, {717, {0.0, 64.0}}, {718, {0.0, 79.0}}, {719, {0.0, 101.0}}, {720, {3.0, 101.0}}, {721, {3.0, 79}}, {722, {3.0, 64.0}}, {723, {3.0, 42.0}}, {724, {3.0, 30}}, {725, {3.0, 20}},
         {800, {3.0, 5.0}}, {801, {3.0, -10.0}}, {802, {3.0, -20.0}}, {803, {3.0, -30.0}}, {804, {3.0, -50.0}}, {805, {3, -60.0}}, {806, {3, -80.0}}, {807, {0, -80.0}}, {808, {0, -60.0}}, {809, {0.0, -50}}, {810, {0.0, -30.0}}, {811, {0.0, -20.0}}, {812, {0.0, -10.0}}, {813, {0.0, 5.0}}, {814, {0.0, 20.0}}, {815, {0.0, 30.0}}, {816, {0.0, 42.0}}, {817, {0.0, 64.0}}, {818, {0.0, 79.0}}, {819, {0.0, 101.0}}, {820, {3.0, 101.0}}, {821, {3.0, 79}}, {822, {3.0, 64.0}}, {823, {3.0, 42.0}}, {824, {3.0, 30}}, {825, {3.0, 97}},  // deId 825 has an extra reflexion, this is why the value is adjusted like this..
         {900, {0.0, 5.0}}, {901, {0.0, -10.0}}, {902, {0.0, -20.0}}, {903, {0.0, -30.0}}, {904, {0.0, -50.0}}, {905, {0, -60.0}}, {906, {0, -80.0}}, {907, {0, -80.0}}, {908, {0, -60.0}}, {909, {0.0, -50}}, {910, {0.0, -30.0}}, {911, {0.0, -20.0}}, {912, {0.0, -10.0}}, {913, {0.0, 5.0}}, {914, {0.0, 20.0}}, {915, {0.0, 30.0}}, {916, {0.0, 50.0}}, {917, {0.0, 70.0}}, {918, {0.0, 90.0}}, {919, {0.0, 110.0}}, {920, {0.0, 110.0}}, {921, {0.0, 90}}, {922, {0.0, 70}}, {923, {0.0, 50}}, {924, {0.0, 30}}, {925, {0.0, 20}},
@@ -306,7 +297,7 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
     double step = 1.0 / 10; // Calculate the step size for each number
     double textX; // X coordinate of the text 
     double textY; // X coordinate of the text 
-    double stepY; // Starting Y coordinate of the column (text)
+    double startY; // Starting Y coordinate of the column (text)
     double spacing; // Distance between each text
 
     std::string title = "Scale";  // Defining the Title
@@ -320,9 +311,9 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
         rectY = -96;
 
         textX = rectX + rectWidth + 5;
-        stepY = 82 + rectY + rectHeight / 2;
+        startY = 82 + rectY + rectHeight / 2;
         spacing = 1 + rectHeight / 11;
-        w.text(title, textX - 5, stepY -190); 
+        w.text(title, textX - 5, startY -190); 
     } else if (nChamber == 3 || nChamber == 4) {
         rectWidth = 20;
         rectHeight = 200;
@@ -330,9 +321,9 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
         rectY = -94;
 
         textX = rectX + rectWidth + 5;
-        stepY = 82 + rectY + rectHeight / 2;
+        startY = 82 + rectY + rectHeight / 2;
         spacing = 1 + rectHeight / 11;
-        w.text(title, textX - 7, stepY -190); 
+        w.text(title, textX - 7, startY -190); 
     } else if (nChamber == 5 || nChamber == 6) { 
         rectWidth = 20;
         rectHeight = 225;
@@ -340,9 +331,9 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
         rectY = -20;
 
         textX = rectX + rectWidth + 5;
-        stepY = 90 + rectY + rectHeight / 2;
+        startY = 90 + rectY + rectHeight / 2;
         spacing = 0.7 + rectHeight / 11;
-        w.text(title, textX - 5, stepY -210); 
+        w.text(title, textX - 5, startY -210); 
     } else if (nChamber == 7 || nChamber == 8) {
         rectWidth = 30;
         rectHeight = 325;
@@ -350,9 +341,9 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
         rectY = -20;
 
         textX = rectX + rectWidth + 5;
-        stepY = 130 + rectY + rectHeight / 2;
+        startY = 130 + rectY + rectHeight / 2;
         spacing = 1.5 + rectHeight / 11;
-        w.text(title, textX - 5, stepY -300); 
+        w.text(title, textX - 5, startY -300); 
     } else if (nChamber == 9 || nChamber == 10) {
         rectWidth = 35;
         rectHeight = 325;
@@ -360,9 +351,9 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
         rectY = -20;
 
         textX = rectX + rectWidth + 5;
-        stepY = 129 + rectY + rectHeight / 2;
+        startY = 129 + rectY + rectHeight / 2;
         spacing = 1.5 + rectHeight / 11;
-        w.text(title, textX - 5, stepY -300); 
+        w.text(title, textX - 5, startY -300); 
     }
 
     // Calculate step size for each part of the rectangle
@@ -371,15 +362,15 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
 
     // Add 255 parts of the rectangle
     for (int i = 0; i < 255; i++) {
-        double stepY = rectY + i * stepY;
+        double startY = rectY + i * stepY;
         double endY = rectY + (i + 1) * stepY;
 
         double startX = rectX;
         double endX = rectX + rectWidth;
 
         contour.addPolygon({
-            {startX, stepY},
-            {endX, stepY},
+            {startX, startY},
+            {endX, startY},
             {endX, endY},
             {startX, endY}
         });
@@ -389,7 +380,7 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
     double n;
     for (int i = 10; i >= 0; i--) {
         n = i * step; // Calculate the number for each step
-        double textY = stepY + (1 - i) * spacing; // Adjust the Y coordinate for each number
+        double textY = startY + (1 - i) * spacing; // Adjust the Y coordinate for each number
 
         int integerPart = static_cast<int>(n); // Extract the integer part
         int decimalPart = static_cast<int>((n - integerPart) * 10); // Extract the decimal part
@@ -407,7 +398,7 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
 void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending) {
 
 
-    //get ClusterperDualSampa Histogram: 
+    //get ClusterperDualSampa Histogram, (all clusters and dsindex): 
 
     TH1F* ClustersperDualSampa = getrootHistogram3();
 
@@ -418,10 +409,9 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending) {
 
     for (int i = 1; i <= ClustersperDualSampa->GetNbinsX(); i++) {
         int clusters = ClustersperDualSampa->GetBinContent(i);
-        // Only consider non-zero bins
             nClusters.push_back(clusters);
-            dsindex.push_back(i-1); // Subtract 1 to get the dsindex
-            dsId.push_back(convertDsIndextoDsId(i-1)); // Convert dsindex to dsId and store it
+            dsindex.push_back(i-1);  
+            dsId.push_back(convertDsIndextoDsId(i-1)); 
             o2::mch::raw::DsDetId dsDetId = o2::mch::getDsDetId(i-1);
             uint16_t dsId = dsDetId.dsId();
             uint16_t deId = dsDetId.deId();
