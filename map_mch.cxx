@@ -34,6 +34,7 @@
 #include "TColor.h"
 #include "TROOT.h"
 #include "TStyle.h"
+#include "DetectorsBase/GeometryManager.h"
 
 
 using namespace o2::mch::mapping;
@@ -66,7 +67,7 @@ std::pair<double, double> getTranslationOffset(int deId) {
 
         //3rd type of Chamber Shape (chambers 7,8,9,10)
         {700, {3.0, 5.0}}, {701, {3.0, -10.0}}, {702, {3.0, -20.0}}, {703, {3.0, -30.0}}, {704, {3.0, -50.0}}, {705, {3, -60.0}}, {706, {3, -80.0}}, {707, {0, -80.0}}, {708, {0, -60.0}}, {709, {0.0, -50}}, {710, {0.0, -30.0}}, {711, {0.0, -20.0}}, {712, {0.0, -10.0}}, {713, {0.0, 5.0}}, {714, {0.0, 20.0}}, {715, {0.0, 30.0}}, {716, {0.0, 42.0}}, {717, {0.0, 64.0}}, {718, {0.0, 79.0}}, {719, {0.0, 101.0}}, {720, {3.0, 101.0}}, {721, {3.0, 79}}, {722, {3.0, 64.0}}, {723, {3.0, 42.0}}, {724, {3.0, 30}}, {725, {3.0, 20}},
-        {800, {3.0, 5.0}}, {801, {3.0, -10.0}}, {802, {3.0, -20.0}}, {803, {3.0, -30.0}}, {804, {3.0, -50.0}}, {805, {3, -60.0}}, {806, {3, -80.0}}, {807, {0, -80.0}}, {808, {0, -60.0}}, {809, {0.0, -50}}, {810, {0.0, -30.0}}, {811, {0.0, -20.0}}, {812, {0.0, -10.0}}, {813, {0.0, 5.0}}, {814, {0.0, 20.0}}, {815, {0.0, 30.0}}, {816, {0.0, 42.0}}, {817, {0.0, 64.0}}, {818, {0.0, 79.0}}, {819, {0.0, 101.0}}, {820, {3.0, 101.0}}, {821, {3.0, 79}}, {822, {3.0, 64.0}}, {823, {3.0, 42.0}}, {824, {3.0, 30}}, {825, {3.0, 97}},  // deId 825 has an extra reflexion, this is why the value is adjusted like this..
+        {800, {3.0, 5.0}}, {801, {3.0, -10.0}}, {802, {3.0, -20.0}}, {803, {3.0, -30.0}}, {804, {3.0, -50.0}}, {805, {3, -60.0}}, {806, {3, -80.0}}, {807, {0, -80.0}}, {808, {0, -60.0}}, {809, {0.0, -50}}, {810, {0.0, -30.0}}, {811, {0.0, -20.0}}, {812, {0.0, -10.0}}, {813, {0.0, 5.0}}, {814, {0.0, 20.0}}, {815, {0.0, 30.0}}, {816, {0.0, 42.0}}, {817, {0.0, 64.0}}, {818, {0.0, 79.0}}, {819, {0.0, 101.0}}, {820, {3.0, 101.0}}, {821, {3.0, 79}}, {822, {3.0, 64.0}}, {823, {3.0, 42.0}}, {824, {3.0, 30}}, {825, {3.0, 20}},  // deId 825 has an extra reflexion, this is why the value is adjusted like this..
         {900, {0.0, 5.0}}, {901, {0.0, -10.0}}, {902, {0.0, -20.0}}, {903, {0.0, -30.0}}, {904, {0.0, -50.0}}, {905, {0, -60.0}}, {906, {0, -80.0}}, {907, {0, -80.0}}, {908, {0, -60.0}}, {909, {0.0, -50}}, {910, {0.0, -30.0}}, {911, {0.0, -20.0}}, {912, {0.0, -10.0}}, {913, {0.0, 5.0}}, {914, {0.0, 20.0}}, {915, {0.0, 30.0}}, {916, {0.0, 50.0}}, {917, {0.0, 70.0}}, {918, {0.0, 90.0}}, {919, {0.0, 110.0}}, {920, {0.0, 110.0}}, {921, {0.0, 90}}, {922, {0.0, 70}}, {923, {0.0, 50}}, {924, {0.0, 30}}, {925, {0.0, 20}},
         {1000, {0.0, 5.0}}, {1001, {0.0, -10.0}}, {1002, {0.0, -20.0}}, {1003, {0.0, -30.0}}, {1004, {0.0, -50.0}}, {1005, {0, -60.0}}, {1006, {0, -80.0}}, {1007, {0, -80.0}}, {1008, {0, -60.0}}, {1009, {0.0, -50}}, {1010, {0.0, -30.0}}, {1011, {0.0, -20.0}}, {1012, {0.0, -10.0}}, {1013, {0.0, 5.0}}, {1014, {0.0, 20.0}}, {1015, {0.0, 30.0}}, {1016, {0.0, 50.0}}, {1017, {0.0, 70.0}}, {1018, {0.0, 90.0}}, {1019, {0.0, 110.0}}, {1020, {0.0, 110.0}}, {1021, {0.0, 90}}, {1022, {0.0, 70}}, {1023, {0.0, 50}}, {1024, {0.0, 30}}, {1025, {0.0, 20}}
        
@@ -108,14 +109,10 @@ std::vector<o2::mch::contour::Contour<double>> transformLocalToGlobal(int deId, 
      
                 auto offset = getTranslationOffset(deId);
                    
-                 if (deId == 825) {
-                    v2.x = gpos.X() + offset.first;
-                    v2.y = gpos.Y() + offset.second;   
-                } else {
+            
                     v2.y = -gpos.Y();    // reflection anti-clockwise (minus value)
                     v2.y += offset.second;
-                    v2.x = gpos.X() + offset.first;
-                }   
+                    v2.x = gpos.X() + offset.first; 
              
                 vertices.push_back(v2);
         
@@ -190,8 +187,7 @@ std::vector<int> getDualSampasBorNB(int deId, bool isBending) {
     return dualSampas; 
 }
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 // Get All Dual Sampas of n Chambers:
@@ -300,7 +296,7 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
     double startY; // Starting Y coordinate of the column (text)
     double spacing; // Distance between each text
 
-    std::string title = "Scale";  // Defining the Title
+    std::string title = "";  // Defining the Title
 
     //size of rectangle depending on chamber
     
@@ -395,12 +391,9 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending) {
+void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa ) {
 
 
-    //get ClusterperDualSampa Histogram, (all clusters and dsindex): 
-
-    TH1F* ClustersperDualSampa = getrootHistogram3();
 
     int nclustermax = ClustersperDualSampa->GetMaximum();
     std::vector<int> nClusters;
@@ -431,8 +424,11 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending) {
 
 
     //Getting transformations from .json
-    std::ifstream in("o2sim_geometry-aligned.json");
-    auto transformation = o2::mch::geo::transformationFromJSON(in);
+    //std::ifstream in("o2sim_geometry-aligned.json");
+    std::string name = "o2sim_geometry-aligned.root";
+    //auto transformation = o2::mch::geo::transformationFromJSON(in);
+    o2::base::GeometryManager::loadGeometry(name.c_str());
+    auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
 
   
     //Getting all deIds for all Chambers, info found in DetectionElements.h
@@ -455,7 +451,7 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending) {
                 auto dsId = dsIds[i];
                 // Convert local dsId to global dsIndex (fo a given deId)
                 int dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
-                int colorId = int( nClusters[ dsIndex] / (nclustermax - epsilon) * colors.size());
+                int colorId = int( nClusters[ dsIndex] / (nclustermax + epsilon) * colors.size());
                 w.contour(dualSampaContoursOut[i], colors[colorId]);
 
         }
@@ -536,8 +532,8 @@ getAllDualSampas(10);
 
 // Define the bounding boxes for the 10 images:
 std::vector<o2::mch::contour::BBox<double>> bboxes = {
-    {-200, -200, 200, 200},
-    {-200, -200, 200, 200},
+    {-150, -150, 150, 150},
+    {-150, -150, 150, 150},
     {-200, -200, 200, 200},
     {-200, -200, 200, 200},
     {-240, -240, 240, 240},
@@ -556,15 +552,29 @@ for (auto isBendingPlane : {true, false}) {
                         (isBendingPlane ? "B" : "NB") + ".html");
 
         // Create the SVGWriterNew object:
-        o2::mch::contour::SVGWriter wSeg(bboxes[i]);
+        o2::mch::contour::SVGWriter wSegleft(bboxes[i]);
+        o2::mch::contour::SVGWriter wSegright(bboxes[i]);
 
-        svgChamber(wSeg, i+1, isBendingPlane);
-        
-        // Write the output HTML 
+        svgChamber(wSegleft, i+1, isBendingPlane, getrootHistogram());
+        svgChamber(wSegright, i+1, isBendingPlane, getrootHistogram3());
+
+        // Write the HTML for the chamber to the output file, wrapped in a <div> tag
+        outv << "<div style='display:flex;justify-content:center'>" << std::endl;
+        wSegleft.writeHTML(outv);
+        outv << "<div style='margin-left:20px;'></div>" << std::endl;
+        wSegright.writeHTML(outv);
+        outv << "</div>" << std::endl;
+
+       /*
+         // Write the HTML 
         wSeg.writeHTML(outv);
        
+       
+       */ 
+      
     } 
 }    
+
 
 
 
