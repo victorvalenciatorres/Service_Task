@@ -236,12 +236,6 @@ uint16_t getDsIndexFromDsIdAndDeId(uint16_t dsId, uint16_t deId)
 
 //Getting ClustersPerDualSampa Histogram stored in .root file
  
-TH1F* getrootHistogram() {
-
-    TFile* file = TFile::Open("/Users/valencia/test/ClustersMCH.root");
-    TH1F* ClustersperDualSampa = (TH1F*)file->Get("ClustersPerDualSampa");
-    return ClustersperDualSampa;
-}
 
 TH1F* getrootHistogram2() {
 
@@ -555,8 +549,8 @@ for (auto isBendingPlane : {true, false}) {
         o2::mch::contour::SVGWriter wSegleft(bboxes[i]);
         o2::mch::contour::SVGWriter wSegright(bboxes[i]);
 
-        svgChamber(wSegleft, i+1, isBendingPlane, getrootHistogram());
-        svgChamber(wSegright, i+1, isBendingPlane, getrootHistogram3());
+        svgChamber(wSegleft, i+1, isBendingPlane, getrootHistogram3());
+        svgChamber(wSegright, i+1, isBendingPlane, getrootHistogram2());
 
         // Write the HTML for the chamber to the output file, wrapped in a <div> tag
         outv << "<div style='display:flex;justify-content:center'>" << std::endl;
