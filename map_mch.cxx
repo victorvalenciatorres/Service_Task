@@ -35,6 +35,7 @@
 #include "TROOT.h"
 #include "TStyle.h"
 #include "DetectorsBase/GeometryManager.h"
+#include "MCHContour/Polygon.h"
 
 
 using namespace o2::mch::mapping;
@@ -388,7 +389,6 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
 void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa ) {
 
 
-
     int nclustermax = ClustersperDualSampa->GetMaximum();
     std::vector<int> nClusters;
     std::vector<uint16_t> dsindex;
@@ -405,26 +405,30 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
     }
 
 /*
-
  for (int i = 0; i < dsId.size(); i++) {
         std::cout << "dsIndex: " << dsindex[i]  << ", dsId: " << dsId[i] << ", nClusters: " << nClusters[i] << std::endl;
     }
 
 */
- 
 
     //Colors Vector in HEX RBG format
     std::vector<std::string> colors = colorGradiant();
 
 
-    //Getting transformations from .json
-    //std::ifstream in("o2sim_geometry-aligned.json");
+    //Getting transformations from file.root
     std::string name = "o2sim_geometry-aligned.root";
-    //auto transformation = o2::mch::geo::transformationFromJSON(in);
     o2::base::GeometryManager::loadGeometry(name.c_str());
     auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
 
-  
+ 
+/*
+      //Getting transformation from .json
+        std::ifstream in("o2sim_geometry-aligned2.json");
+        auto transformation = o2::mch::geo::transformationFromJSON(in);
+
+*/
+
+
     //Getting all deIds for all Chambers, info found in DetectionElements.h
     auto deIds = getAllDeIds(nChamber);
 
@@ -441,19 +445,41 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
         // Get the map index to dsId
         auto dsIds = getDualSampasBorNB(deId, bending); 
         for (auto i=0;  i < dualSampaContoursOut.size();i++) {
-                // Get the local dsId
-                auto dsId = dsIds[i];
-                // Convert local dsId to global dsIndex (fo a given deId)
-                int dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
-                int colorId = int( nClusters[ dsIndex] / (nclustermax + epsilon) * colors.size());
-                w.contour(dualSampaContoursOut[i], colors[colorId]);
 
+            ///////////////////////////////////////////////////////////////////////////// !
+
+
+            auto& contour = dualSampaContoursOut[i]; // Get the current contour
+
+            // Create a polygon from the vertices of the contour
+            
+            double area = 0.0;
+
+            for (const auto& poly : contour.getPolygons())
+            {
+                area += poly.signedArea();
+            }
+           
+            // Output the area
+            std::cout << "Contour " << i << " Area: " << area << std::endl;
+
+
+            ///////////////////////////////////////////////////////////////////////////////
+
+            // Get the local dsId
+            auto dsId = dsIds[i];
+            // Convert local dsId to global dsIndex (fo a given deId)
+            int dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
+            int colorId = int( nClusters[ dsIndex] / ((nclustermax + epsilon) )* colors.size());
+            w.contour(dualSampaContoursOut[i], colors[colorId]);
+                
         }
         
    
 
         w.svgGroupEnd();
     }
+
 
 
     // Add rectangle for color scale + text:
@@ -567,7 +593,26 @@ for (auto isBendingPlane : {true, false}) {
        */ 
       
     } 
-}    
+}
+
+
+////////////////
+
+ // Create a polygon with vertices
+  o2::mch::contour::Polygon<double> polygon{
+    {0.0, 0.0}, // Vertex 1
+    {2.0, 0.0}, // Vertex 2
+    {2.0, 2.0}, // Vertex 3
+    {0.0, 2.0}  // Vertex 4
+  };
+
+  // Calculate the signed area
+  double area = polygon.signedArea();
+
+  // Output the area
+  std::cout << "Area: " << area << std::endl;
+
+////////////////
 
 
 
