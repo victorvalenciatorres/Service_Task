@@ -238,6 +238,13 @@ uint16_t getDsIndexFromDsIdAndDeId(uint16_t dsId, uint16_t deId)
 //Getting ClustersPerDualSampa Histogram stored in .root file
  
 
+TH1F* getrootHistogram1() {
+
+    TFile* file = TFile::Open("/Users/valencia/test/ClustersMCH_LHC22t.root");
+    TH1F* ClustersperDualSampa = (TH1F*)file->Get("ClustersPerDualSampa");
+    return ClustersperDualSampa;
+}
+
 TH1F* getrootHistogram2() {
 
     TFile* file = TFile::Open("/Users/valencia/Desktop/Code_for_fit/output.root");
@@ -245,12 +252,6 @@ TH1F* getrootHistogram2() {
     return ClustersperDualSampa;
 }
 
-TH1F* getrootHistogram3() {
-
-    TFile* file = TFile::Open("/Users/valencia/test/ClustersMCH_LHC22t.root");
-    TH1F* ClustersperDualSampa = (TH1F*)file->Get("ClustersPerDualSampa");
-    return ClustersperDualSampa;
-}
 /////////////////////////////////////////////////////////////////////////////////
 
  //Creation of Color Palette:
@@ -403,111 +404,89 @@ std::pair<std::vector<int>, std::vector<uint16_t>> processClustersperDualSampa(c
 
     return std::make_pair(nClusters, dsindex);
 }
+//////////////////////////////////////////////////////
 
+o2::mch::geo::TransformationCreator loadGeometry(const std::string& name) {
+    // Load the geometry
+    o2::base::GeometryManager::loadGeometry(name.c_str());
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void calculateMaxRatio( int nChamber, bool bending, const TH1F* ClustersperDualSampa ) {
+    // Get the transformation
+    auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
+
+    return transformation;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// superrr
+
+double calculateMaxRatio(int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation) {
 
     auto nClusters_dsindex = processClustersperDualSampa(ClustersperDualSampa);
     std::vector<int> nClusters = nClusters_dsindex.first;
     std::vector<uint16_t> dsindex = nClusters_dsindex.second;
 
-    //Getting transformations from file.root
-    std::string name = "o2sim_geometry-aligned.root";
-    o2::base::GeometryManager::loadGeometry(name.c_str());
-    auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
-
-    //Getting all deIds for all Chambers, info found in DetectionElements.h
+    // Getting all deIds for all Chambers, info found in DetectionElements.h
     auto deIds = getAllDeIds(nChamber);
 
-    double maxRatio = 0.0 ;
-    double ratio = 0.0 ;
+    std::vector<std::pair<double, int>> areas2; // Vector with Areas of DS Contours paired with dsIndex
+    double maxRatio = 0.0;
+    double ratio = 0.0;
+    int dsIndex;
 
-    // Contours of all deId transformated  + SVGWRITER of all dsContourOut bien
+    // Contours of all deId transformed + all dsContourOut
     for (auto deId : deIds) {
         auto dualSampaContoursOut = transformLocalToGlobal(deId, bending, transformation);
         // Get the map index to dsId
         auto dsIds = getDualSampasBorNB(deId, bending); 
-        for (auto i=0;  i < dualSampaContoursOut.size();i++) {
-
+        for (auto i = 0; i < dualSampaContoursOut.size(); i++) {
             auto& contour = dualSampaContoursOut[i]; // Get the current contour
-
-            // Create a polygon from the vertices of the contour
-            
-            double area = 0.0;
-
-            for (const auto& poly : contour.getPolygons())
-            {
+            double area = 0.0; // Area of a DS Contour
+            for (const auto& poly : contour.getPolygons()) {
                 area += poly.signedArea();
             }
-           
             // Get the local dsId
             auto dsId = dsIds[i];
-            // Convert local dsId to global dsIndex (fo a given deId)
-            int dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
-            ratio = nClusters[dsIndex] / area;
+            // Convert local dsId to global dsIndex (for a given deId)
+            dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
+            // Create a pair of area and dsIndex and push it to the areas2 vector
+            areas2.push_back(std::make_pair(area, dsIndex));
+           
+            ratio = nClusters[dsIndex] / std::abs(areas2.back().first);
+                  
             maxRatio = std::max(maxRatio, ratio);
-            
+
+            //std::cout << "Ratio = " << ratio <<  " nClusters = " << nClusters[dsIndex] << " Area = " << std::abs(areas2.back().first) << " dsIndex = " <<  dsIndex  << std::endl; 
         }
-      
     }
+    
+    //std::cout << "Maximal Ratio = " << maxRatio << std::endl;
 
-
-    std::cout << "Max Ratio = " << maxRatio << std::endl;
-
+    return maxRatio;
 }
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// perfi
 
 
-void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa ) {
+void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation, double maxRatio) {
 
 
     int nclustermax = ClustersperDualSampa->GetMaximum();
-    std::vector<int> nClusters;
-    std::vector<uint16_t> dsindex;
-    std::vector<uint16_t> dsId;
 
-    for (int i = 1; i <= ClustersperDualSampa->GetNbinsX(); i++) {
-        int clusters = ClustersperDualSampa->GetBinContent(i);
-            nClusters.push_back(clusters);
-            dsindex.push_back(i-1);  
-            dsId.push_back(convertDsIndextoDsId(i-1)); 
-            o2::mch::raw::DsDetId dsDetId = o2::mch::getDsDetId(i-1);
-            uint16_t dsId = dsDetId.dsId();
-            uint16_t deId = dsDetId.deId();
-    }
-
-/*
- for (int i = 0; i < dsId.size(); i++) {
-        std::cout << "dsIndex: " << dsindex[i]  << ", dsId: " << dsId[i] << ", nClusters: " << nClusters[i] << std::endl;
-    }
-
-*/
+    auto nClusters_dsindex = processClustersperDualSampa(ClustersperDualSampa);
+    std::vector<int> nClusters = nClusters_dsindex.first;
+    std::vector<uint16_t> dsindex = nClusters_dsindex.second;
 
     //Colors Vector in HEX RBG format
     std::vector<std::string> colors = colorGradiant();
-
-
-    //Getting transformations from file.root
-    std::string name = "o2sim_geometry-aligned.root";
-    o2::base::GeometryManager::loadGeometry(name.c_str());
-    auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
-
- 
-/*
-      //Getting transformation from .json
-        std::ifstream in("o2sim_geometry-aligned2.json");
-        auto transformation = o2::mch::geo::transformationFromJSON(in);
-
-*/
-
 
     //Getting all deIds for all Chambers, info found in DetectionElements.h
     auto deIds = getAllDeIds(nChamber);
 
     double epsilon=1.e-6; //shift for nclustermax
+
+    std::vector<std::pair<double, int>> areas2; // Vector with Areas of DS Contours paired with dsIndex
+
+     double maxratio = calculateMaxRatio( nChamber, bending, ClustersperDualSampa, transformation);
 
     // Contours of all deId transformated  + SVGWRITER of all dsContourOut bien
     for (auto deId : deIds) {
@@ -519,43 +498,27 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
                 w.addStyle(str);
         // Get the map index to dsId
         auto dsIds = getDualSampasBorNB(deId, bending); 
-        for (auto i=0;  i < dualSampaContoursOut.size();i++) {
-
-            ///////////////////////////////////////////////////////////////////////////// !
+        for (auto i = 0; i < dualSampaContoursOut.size(); i++) {
 
             auto& contour = dualSampaContoursOut[i]; // Get the current contour
 
-            // Create a polygon from the vertices of the contour
-            
-            double area = 0.0;
-
-            for (const auto& poly : contour.getPolygons())
-            {
+            double area = 0.0; // Area of a DS Contour
+            for (const auto& poly : contour.getPolygons()) {
                 area += poly.signedArea();
             }
-           
-            // Output the area
-            //std::cout << "Contour " << i << " Area: " << area << std::endl;
 
-            ///////////////////////////////////////////////////////////////////////////////
-
-            // Get the local dsId
             auto dsId = dsIds[i];
-            // Convert local dsId to global dsIndex (fo a given deId)
             int dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
-            int colorId = int( nClusters[ dsIndex]  / ((nclustermax + epsilon))* colors.size());
-            //int colorId = int((nClusters[dsIndex] / area) / 7.3334 * colors.size());
+            areas2.push_back(std::make_pair(area, dsIndex));
+
+            int colorId = int((nClusters[dsIndex] / std::abs(areas2.back().first)) / (maxratio + epsilon) * colors.size());
             w.contour(dualSampaContoursOut[i], colors[colorId]);
-                
         }
-        
-   
 
         w.svgGroupEnd();
     }
 
-
-
+   
     // Add rectangle for color scale + text:
     o2::mch::contour::Contour<double> rectangleContour;
     addRectangleContour(nChamber, rectangleContour, w);
@@ -638,7 +601,9 @@ std::vector<o2::mch::contour::BBox<double>> bboxes = {
     {-450, -450, 450, 450}
 };
 
-
+    //Load Aligned Geometry from file.root
+    std::string name = "o2sim_geometry-aligned.root";
+    
 // Create the SVGWriterNew objects for the 10 images with their respective bounding boxes
 for (auto isBendingPlane : {true, false}) {
     for (int i = 0; i < 10; i++) {
@@ -649,9 +614,11 @@ for (auto isBendingPlane : {true, false}) {
         o2::mch::contour::SVGWriter wSegleft(bboxes[i]);
         o2::mch::contour::SVGWriter wSegright(bboxes[i]);
 
-        svgChamber(wSegleft, i+1, isBendingPlane, getrootHistogram3());
-        svgChamber(wSegright, i+1, isBendingPlane, getrootHistogram2());
-        calculateMaxRatio(i+1, isBendingPlane, getrootHistogram3());
+        double maxRatioLeft = calculateMaxRatio(i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name));
+        double maxRatioRight = calculateMaxRatio(i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name));
+        svgChamber(wSegleft, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft);
+        svgChamber(wSegright, i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name), maxRatioRight);
+        
 
         // Write the HTML for the chamber to the output file, wrapped in a <div> tag
         outv << "<div style='display:flex;justify-content:center'>" << std::endl;
@@ -660,37 +627,9 @@ for (auto isBendingPlane : {true, false}) {
         wSegright.writeHTML(outv);
         outv << "</div>" << std::endl;
 
-       /*
-         // Write the HTML 
-        wSeg.writeHTML(outv);
-       
-       
-       */ 
       
     } 
 }
-
-
-////////////////
-
- // Create a polygon with vertices
-  o2::mch::contour::Polygon<double> polygon{
-    {0.0, 0.0}, // Vertex 1
-    {2.0, 0.0}, // Vertex 2
-    {2.0, 2.0}, // Vertex 3
-    {0.0, 2.0}  // Vertex 4
-  };
-
-  // Calculate the signed area
-  double area = polygon.signedArea();
-
-  // Output the area
-  std::cout << "Area: " << area << std::endl;
-
-////////////////
-
-
-
 
   return 0;
 }
