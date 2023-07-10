@@ -512,7 +512,13 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
             areas2.push_back(std::make_pair(area, dsIndex));
 
             int colorId = int((nClusters[dsIndex] / std::abs(areas2.back().first)) / (maxratio + epsilon) * colors.size());
-            w.contour(dualSampaContoursOut[i], colors[colorId]);
+            
+            if (nClusters[dsIndex] == 0) {
+                w.contour(dualSampaContoursOut[i], "#FFFFFF"); // White color for 0 Cluster  <--->  "#00FF00"  Bright green color
+            } else {
+                w.contour(dualSampaContoursOut[i], colors[colorId]);
+            }
+
         }
 
         w.svgGroupEnd();
