@@ -43,10 +43,9 @@ using namespace o2::mch::mapping;
 namespace po = boost::program_options;
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-// Function with 156 translation offsets to not overlap the deId of each chamber:
-
+// Function with 156 translation offsets to not overlap the deIds of each chamber
 std::pair<double, double> getTranslationOffset(int deId) {
 
     std::map<int, std::pair<double, double>> translationOffsets = {
@@ -78,77 +77,71 @@ std::pair<double, double> getTranslationOffset(int deId) {
     
 }
 
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
 // Function to transform local contours to global contours coordinates 
 std::vector<o2::mch::contour::Contour<double>> transformLocalToGlobal(int deId, bool bending, const o2::mch::geo::TransformationCreator& transformation) {
-    CathodeSegmentation cSeg{deId, bending}; // Assuming there is a function to get cathode segmentation from deID
+    CathodeSegmentation cSeg{deId, bending}; 
     std::vector<o2::mch::contour::Contour<double>> dualSampaContoursIn = getDualSampaContours(cSeg);
     std::vector<o2::mch::contour::Contour<double>> dualSampaContoursOut; 
-    auto t = transformation(deId);
+    auto transformDeId = transformation(deId);
 
     for(int i = 0; i < dualSampaContoursIn.size(); i++) {
-        auto dsContour = dualSampaContoursIn[i];
-        o2::mch::contour::Contour<double> dsContour2;
+        auto dsContourIn = dualSampaContoursIn[i];
+        o2::mch::contour::Contour<double> dsContourOut;
 
-        for (auto p = 0; p < dsContour.size(); p++) {
-            auto polyg = dsContour[p];
-            std::vector<o2::mch::contour::Vertex<double>> vertices;
+        for (auto p = 0; p < dsContourIn.size(); p++) {
+            auto polygIn = dsContourIn[p];
+            std::vector<o2::mch::contour::Vertex<double>> verticesOut;
 
-            for (auto v = 0; v < polyg.size(); v++) {
-                auto vertex = polyg[v];
-                o2::math_utils::Point3D<float> lpos(vertex.x, vertex.y, 0.0);
-                o2::math_utils::Point3D<float> gpos;
+            for (auto v = 0; v < polygIn.size(); v++) {
+                auto vertexIn = polygIn[v];
+                o2::math_utils::Point3D<float> lpos(vertexIn.x, vertexIn.y, 0.0); 
+                o2::math_utils::Point3D<float> gpos;        
 
-                //Rotations + Translations: local --> global  
-                t.LocalToMaster(lpos, gpos);
-                o2::mch::contour::Vertex<double> v2;
+                // Transformations: Rotations + Translations (local --> global) 
+                transformDeId.LocalToMaster(lpos, gpos);
+                o2::mch::contour::Vertex<double> vertexOut;
 
-                // Apply extra reflection for deID 825 + Extra Translations for all deId to not overlap
-     
                 auto offset = getTranslationOffset(deId);
                    
             
-                    v2.y = -gpos.Y();    // reflection anti-clockwise (minus value)
-                    v2.y += offset.second;
-                    v2.x = gpos.X() + offset.first; 
+                    vertexOut.y = -gpos.Y();       // reflection anti-clockwise (minus value)
+                    vertexOut.y += offset.second;
+                    vertexOut.x = gpos.X() + offset.first; 
              
-                vertices.push_back(v2);
+                verticesOut.push_back(vertexOut);
         
             }
 
-            o2::mch::contour::Polygon<double> polyg2(vertices.begin(), vertices.end()); 
-            dsContour2.addPolygon(polyg2);
+            o2::mch::contour::Polygon<double> polygOut(verticesOut.begin(), verticesOut.end()); 
+            dsContourOut.addPolygon(polygOut);
         }
 
-        dualSampaContoursOut.push_back(dsContour2);
+        dualSampaContoursOut.push_back(dsContourOut);
     }
 
 
     return dualSampaContoursOut;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// GET ALL deID of one chamber:
+// GET ALL deID of a given Chamber
 std::vector<int> getAllDeIds(int nChamber) {
     std::vector<int> deIds;
-    int i_1 = *std::move(o2::mch::constants::deId2DeIndex(nChamber*100));    //move solve the problem of optional integer...
+    int i_1 = *std::move(o2::mch::constants::deId2DeIndex(nChamber*100));       //Using move to convert optional integer into normal integer
     int i_2 = *std::move(o2::mch::constants::deId2DeIndex((nChamber+1)*100));
     int Chamberlength = i_2 -i_1;
 
     if(nChamber<10){
-        for (auto i = 0; i < Chamberlength; i++) {
+        for (auto i = 0; i < Chamberlength; i++) {                              //Getting deIds for chambers from 1 - 9
             deIds.push_back(o2::mch::constants::deIdsForAllMCH[i+i_1]);
         }
     }
     else{
         for (int i = 0; i < 26; i++) {
-            deIds.push_back(o2::mch::constants::deIdsForAllMCH[i+i_1]);
+            deIds.push_back(o2::mch::constants::deIdsForAllMCH[i+i_1]);         //Getting deIds for chamber 10
         }
     }
     return deIds;
@@ -156,18 +149,16 @@ std::vector<int> getAllDeIds(int nChamber) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-// GET ALL DualSampa of one deId:
-
+// GET ALL DualSampa of a given deId
 std::vector<int> getDualSampas(int deId) {
     std::vector<int> dualSampas;
     const o2::mch::mapping::Segmentation& seg = o2::mch::mapping::segmentation(deId);
     seg.forEachDualSampa([&dualSampas](int ds) { dualSampas.push_back(ds); });
-    return dualSampas;  //  Dual Sampa ID
+    return dualSampas;  
 }
 
 
-// GET ALL Bending or Non-Bending DualSampa of one deId:
-
+// GET ALL Bending or Non-Bending DualSampa of a given deId:
 std::vector<int> getDualSampasBorNB(int deId, bool isBending) {
     std::vector<int> dualSampas;
     const o2::mch::mapping::Segmentation& seg = o2::mch::mapping::segmentation(deId);
@@ -176,7 +167,7 @@ std::vector<int> getDualSampasBorNB(int deId, bool isBending) {
         seg.forEachPad([&foundDualSampa, isBending, dualSampaId, &seg](int dePadIndex) {
             if (seg.isBendingPad(dePadIndex) == isBending && seg.padDualSampaId(dePadIndex) == dualSampaId) {
                 foundDualSampa = true;
-                return;  // Exit of forEachPad loop
+                return;  
             }
         });
         if (foundDualSampa) {
@@ -188,14 +179,12 @@ std::vector<int> getDualSampasBorNB(int deId, bool isBending) {
     return dualSampas; 
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
 // Get All Dual Sampas of n Chambers:
-
 std::vector<int> getAllDualSampas(int numChambers) {
     std::vector<int> allDualSampas;
-    int count = 0; // Initialize count to 0
+    int count = 0; 
 
     for (int nChamber = 1; nChamber <= numChambers; nChamber++) {
         std::vector<int> deIds = getAllDeIds(nChamber);
@@ -207,18 +196,18 @@ std::vector<int> getAllDualSampas(int numChambers) {
                 dualSampas.push_back(dsId);
             }
         }
-        count = dualSampas.back() + 1; // Increment the count with the last value + 1:
+        count = dualSampas.back() + 1; 
         allDualSampas.insert(allDualSampas.end(), dualSampas.begin(), dualSampas.end());
     }
-
 
     std::cout << std::endl;
 
     return allDualSampas;
 }
-///////////////////////////////////////////////////
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
+//Convert DsIndex (Global) to DsId (Local)
 uint16_t convertDsIndextoDsId(o2::mch::DsIndex dsIndex)
 {
     o2::mch::raw::DsDetId dsDetId = o2::mch::getDsDetId(dsIndex);
@@ -227,17 +216,16 @@ uint16_t convertDsIndextoDsId(o2::mch::DsIndex dsIndex)
 }
 
 
+//Convert from DsId & deId (Local) to DsIndex (Global)
 uint16_t getDsIndexFromDsIdAndDeId(uint16_t dsId, uint16_t deId)
 {
   o2::mch::raw::DsDetId dsDetId(deId, dsId); // Create a DsDetId object with the given deId and dsId
   return o2::mch::getDsIndex(dsDetId); // Get the corresponding dsIndex from the getDsIndex function
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-//Getting ClustersPerDualSampa Histogram stored in .root file
- 
-
+//Getting ClustersPerDualSampa TH1F Histogram stored in root file
 TH1F* getrootHistogram1() {
 
     TFile* file = TFile::Open("/Users/valencia/test/ClustersMCH_LHC22t.root");
@@ -252,10 +240,43 @@ TH1F* getrootHistogram2() {
     return ClustersperDualSampa;
 }
 
-/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
- //Creation of Color Palette:
+//Storing clusters and dsindex from TH1F histogram
+std::pair<std::vector<int>, std::vector<uint16_t>> processClustersperDualSampa(const TH1F* ClustersperDualSampa) {
 
+    std::vector<int> nClusters;
+    std::vector<uint16_t> dsindex;
+    std::vector<uint16_t> dsId;
+
+    for (int i = 1; i <= ClustersperDualSampa->GetNbinsX(); i++) {
+        int clusters = ClustersperDualSampa->GetBinContent(i);
+        nClusters.push_back(clusters);
+        dsindex.push_back(i - 1);
+        dsId.push_back(convertDsIndextoDsId(i - 1));
+        o2::mch::raw::DsDetId dsDetId = o2::mch::getDsDetId(i - 1);
+        uint16_t currentDsId = dsDetId.dsId();
+        uint16_t deId = dsDetId.deId();
+    }
+
+    return std::make_pair(nClusters, dsindex);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+
+//Getting transformations from the aligned geometry 
+o2::mch::geo::TransformationCreator loadGeometry(const std::string& name) {
+    
+    o2::base::GeometryManager::loadGeometry(name.c_str());
+
+    auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
+
+    return transformation;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+
+ //Creation of Color Gradiant Palette
 std::vector<std::string> colorGradiant()
 { 
    
@@ -266,36 +287,33 @@ std::vector<std::string> colorGradiant()
    for (int i = 0; i < colors.GetSize(); i++) {
     Int_t col = colors.At(i);
     TColor *tcol = gROOT->GetColor(col);
-    //std::cout << tcol->AsHexString() << std::endl;
     hexcolors.push_back(tcol->AsHexString());
    }
 
-    TColor::InvertPalette(); // This line ReInvert the Palette again..
+    TColor::InvertPalette();     
 
     return hexcolors;
 
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-//Add Rentangle with 255 colors + text (Numbers from 0 to 1)
-
+//Add Rentangle with 255 colors + Numbers (from 0 to 1)
 void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contour, o2::mch::contour::SVGWriter& w) {
-    double rectWidth;  // Width of the rectangle
-    double rectHeight;  // Height of the rectangle
-    double rectX;  // X-coordinate of the rectangle
-    double rectY;  // Y-coordinate of the rectangle
+    double rectWidth;  
+    double rectHeight;  
+    double rectX;  
+    double rectY;  
 
-    double step = 1.0 / 10; // Calculate the step size for each number
-    double textX; // X coordinate of the text 
-    double textY; // X coordinate of the text 
-    double startY; // Starting Y coordinate of the column (text)
-    double spacing; // Distance between each text
+    double step = 1.0 / 10; 
+    double textX; 
+    double textY; 
+    double startY; 
+    double spacing; 
 
-    std::string title = "";  // Defining the Title
+    std::string title = ""; 
 
     //size of rectangle depending on chamber
-    
     if (nChamber == 1 || nChamber == 2) {
         rectWidth = 10;
         rectHeight = 200;
@@ -348,11 +366,9 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
         w.text(title, textX - 5, startY -300); 
     }
 
-    // Calculate step size for each part of the rectangle
     double stepX = rectWidth / 255.0;
     double stepY = rectHeight / 255.0;
 
-    // Add 255 parts of the rectangle
     for (int i = 0; i < 255; i++) {
         double startY = rectY + i * stepY;
         double endY = rectY + (i + 1) * stepY;
@@ -368,14 +384,14 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
         });
     }
 
-    //Produces 11 Numbers from 1 to 0 (display: 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1)
+    //Produces Numbers from 0 to 1
     double n;
     for (int i = 10; i >= 0; i--) {
-        n = i * step; // Calculate the number for each step
-        double textY = startY + (1 - i) * spacing; // Adjust the Y coordinate for each number
+        n = i * step; 
+        double textY = startY + (1 - i) * spacing; 
 
-        int integerPart = static_cast<int>(n); // Extract the integer part
-        int decimalPart = static_cast<int>((n - integerPart) * 10); // Extract the decimal part
+        int integerPart = static_cast<int>(n); 
+        int decimalPart = static_cast<int>((n - integerPart) * 10); 
 
         std::string numberString = std::to_string(integerPart) + "." + std::to_string(decimalPart);
         w.text(numberString, textX, textY);
@@ -383,51 +399,19 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
 
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-std::pair<std::vector<int>, std::vector<uint16_t>> processClustersperDualSampa(const TH1F* ClustersperDualSampa) {
-
-    std::vector<int> nClusters;
-    std::vector<uint16_t> dsindex;
-    std::vector<uint16_t> dsId;
-
-    for (int i = 1; i <= ClustersperDualSampa->GetNbinsX(); i++) {
-        int clusters = ClustersperDualSampa->GetBinContent(i);
-        nClusters.push_back(clusters);
-        dsindex.push_back(i - 1);
-        dsId.push_back(convertDsIndextoDsId(i - 1));
-        o2::mch::raw::DsDetId dsDetId = o2::mch::getDsDetId(i - 1);
-        uint16_t currentDsId = dsDetId.dsId();
-        uint16_t deId = dsDetId.deId();
-    }
-
-    return std::make_pair(nClusters, dsindex);
-}
-//////////////////////////////////////////////////////
-
-o2::mch::geo::TransformationCreator loadGeometry(const std::string& name) {
-    // Load the geometry
-    o2::base::GeometryManager::loadGeometry(name.c_str());
-
-    // Get the transformation
-    auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
-
-    return transformation;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// superrr
-
+//Calculation of the maximum ratio of all Clusters/DSArea
 double calculateMaxRatio(int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation) {
 
     auto nClusters_dsindex = processClustersperDualSampa(ClustersperDualSampa);
     std::vector<int> nClusters = nClusters_dsindex.first;
     std::vector<uint16_t> dsindex = nClusters_dsindex.second;
 
-    // Getting all deIds for all Chambers, info found in DetectionElements.h
+    // Getting All DeIds for all Chambers
     auto deIds = getAllDeIds(nChamber);
 
-    std::vector<std::pair<double, int>> areas2; // Vector with Areas of DS Contours paired with dsIndex
+    std::vector<std::pair<double, int>> areas; // Vector with Areas of DS Contours paired with dsIndex
     double maxRatio = 0.0;
     double ratio = 0.0;
     int dsIndex;
@@ -447,31 +431,30 @@ double calculateMaxRatio(int nChamber, bool bending, const TH1F* ClustersperDual
             auto dsId = dsIds[i];
             // Convert local dsId to global dsIndex (for a given deId)
             dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
-            // Create a pair of area and dsIndex and push it to the areas2 vector
-            areas2.push_back(std::make_pair(area, dsIndex));
+            // Create a pair of area and dsIndex and push it to the areas vector
+            areas.push_back(std::make_pair(area, dsIndex));
            
-            ratio = nClusters[dsIndex] / std::abs(areas2.back().first);
+            ratio = nClusters[dsIndex] / std::abs(areas.back().first);
                   
             maxRatio = std::max(maxRatio, ratio);
 
-            //std::cout << "Ratio = " << ratio <<  " nClusters = " << nClusters[dsIndex] << " Area = " << std::abs(areas2.back().first) << " dsIndex = " <<  dsIndex  << std::endl; 
         }
     }
     
-    //std::cout << "Maximal Ratio = " << maxRatio << std::endl;
 
     return maxRatio;
 }
 
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// perfi
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-
+// Creating Chambers in SVG format
 void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation, double maxRatio) {
 
 
     int nclustermax = ClustersperDualSampa->GetMaximum();
 
+    //Load clusters from TH1F Histogram
     auto nClusters_dsindex = processClustersperDualSampa(ClustersperDualSampa);
     std::vector<int> nClusters = nClusters_dsindex.first;
     std::vector<uint16_t> dsindex = nClusters_dsindex.second;
@@ -479,14 +462,14 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
     //Colors Vector in HEX RBG format
     std::vector<std::string> colors = colorGradiant();
 
-    //Getting all deIds for all Chambers, info found in DetectionElements.h
+    //Getting all deIds for all Chambers
     auto deIds = getAllDeIds(nChamber);
 
-    double epsilon=1.e-6; //shift for nclustermax
+    double epsilon=1.e-6; //Small shift
 
-    std::vector<std::pair<double, int>> areas2; // Vector with Areas of DS Contours paired with dsIndex
+    std::vector<std::pair<double, int>> areas; // Vector with Areas of DS Contours paired with dsIndex
 
-     double maxratio = calculateMaxRatio( nChamber, bending, ClustersperDualSampa, transformation);
+     double maxratio = calculateMaxRatio( nChamber, bending, ClustersperDualSampa, transformation);  //Maximun Ratio
 
     // Contours of all deId transformated  + SVGWRITER of all dsContourOut bien
     for (auto deId : deIds) {
@@ -509,12 +492,12 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
 
             auto dsId = dsIds[i];
             int dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
-            areas2.push_back(std::make_pair(area, dsIndex));
+            areas.push_back(std::make_pair(area, dsIndex));
 
-            int colorId = int((nClusters[dsIndex] / std::abs(areas2.back().first)) / (maxratio + epsilon) * colors.size());
+            int colorId = int((nClusters[dsIndex] / std::abs(areas.back().first)) / (maxratio + epsilon) * colors.size());
             
             if (nClusters[dsIndex] == 0) {
-                w.contour(dualSampaContoursOut[i], "#FFFFFF"); // White color for 0 Cluster  <--->  "#00FF00"  Bright green color
+                w.contour(dualSampaContoursOut[i], "#FFFFFF");      // White color for 0 Cluster  <--->  "#00FF00" for Bright green color
             } else {
                 w.contour(dualSampaContoursOut[i], colors[colorId]);
             }
@@ -528,7 +511,6 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
     // Add rectangle for color scale + text:
     o2::mch::contour::Contour<double> rectangleContour;
     addRectangleContour(nChamber, rectangleContour, w);
-    
 
     for(auto i =0; i<rectangleContour.size();i++){
 
@@ -541,7 +523,7 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
 }
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
 int main(int argc, char* argv[])
 {
@@ -587,10 +569,9 @@ int main(int argc, char* argv[])
   }
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
- // Get All dualSampas for 10 chambers with Global Index:
-
+// Get All dualSampas for 10 chambers
 getAllDualSampas(10);
 
 // Define the bounding boxes for the 10 images:
@@ -607,30 +588,30 @@ std::vector<o2::mch::contour::BBox<double>> bboxes = {
     {-450, -450, 450, 450}
 };
 
-    //Load Aligned Geometry from file.root
-    std::string name = "o2sim_geometry-aligned.root";
+//Load Aligned Geometry from file.root
+std::string name = "o2sim_geometry-aligned.root";
     
-// Create the SVGWriterNew objects for the 10 images with their respective bounding boxes
+// Create with SVGWriter the 10 Chambers with their respective bounding boxes
 for (auto isBendingPlane : {true, false}) {
     for (int i = 0; i < 10; i++) {
-        std::ofstream outv("CHAMBERS-" + std::to_string(i+1) + "-" +
+        std::ofstream outv("CHAMBERS-" + std::to_string(i+1) + "-" +   //output file
                         (isBendingPlane ? "B" : "NB") + ".html");
 
-        // Create the SVGWriterNew object:
-        o2::mch::contour::SVGWriter wSegleft(bboxes[i]);
-        o2::mch::contour::SVGWriter wSegright(bboxes[i]);
-
+        // Creating bboxes 
+        o2::mch::contour::SVGWriter wSeg(bboxes[i]);
+       
+        // Creating Left and Right Chambers  
         double maxRatioLeft = calculateMaxRatio(i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name));
         double maxRatioRight = calculateMaxRatio(i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name));
-        svgChamber(wSegleft, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft);
-        svgChamber(wSegright, i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name), maxRatioRight);
+        svgChamber(wSeg, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft);
+        svgChamber(wSeg, i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name), maxRatioRight);
         
 
-        // Write the HTML for the chamber to the output file, wrapped in a <div> tag
+        // Write in HTML left and right chambers (using <div> tag)
         outv << "<div style='display:flex;justify-content:center'>" << std::endl;
-        wSegleft.writeHTML(outv);
+        wSeg.writeHTML(outv);
         outv << "<div style='margin-left:20px;'></div>" << std::endl;
-        wSegright.writeHTML(outv);
+        wSeg.writeHTML(outv);
         outv << "</div>" << std::endl;
 
       
