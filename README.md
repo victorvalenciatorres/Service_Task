@@ -46,7 +46,7 @@ MODIFICATIONS:
 --------------------------------------------------------------------------------------
 
 
-COMPILACION (commands):
+COMPILATION (commands):
 
     cd alice ==>    alienv enter O2/latest ninja/latest
 
