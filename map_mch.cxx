@@ -235,8 +235,8 @@ TH1F* getrootHistogram1() {
 
 TH1F* getrootHistogram2() {
 
-    TFile* file = TFile::Open("/Users/valencia/Desktop/Code_for_fit/output.root");
-    TH1F* ClustersperDualSampa = (TH1F*)file->Get("ClustersPerDualSampa");
+    TFile* file = TFile::Open("/Users/valencia/Desktop/emilie/clusters1.root");
+    TH1F* ClustersperDualSampa = (TH1F*)file->Get("Clusters");
     return ClustersperDualSampa;
 }
 
@@ -598,20 +598,21 @@ for (auto isBendingPlane : {true, false}) {
                         (isBendingPlane ? "B" : "NB") + ".html");
 
         // Creating bboxes 
-        o2::mch::contour::SVGWriter wSeg(bboxes[i]);
+        o2::mch::contour::SVGWriter wSegLeft(bboxes[i]);
+        o2::mch::contour::SVGWriter wSegRight(bboxes[i]);
        
         // Creating Left and Right Chambers  
         double maxRatioLeft = calculateMaxRatio(i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name));
         double maxRatioRight = calculateMaxRatio(i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name));
-        svgChamber(wSeg, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft);
-        svgChamber(wSeg, i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name), maxRatioRight);
+        svgChamber(wSegLeft, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft);
+        svgChamber(wSegRight, i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), maxRatioRight);
         
 
         // Write in HTML left and right chambers (using <div> tag)
         outv << "<div style='display:flex;justify-content:center'>" << std::endl;
-        wSeg.writeHTML(outv);
+        wSegLeft.writeHTML(outv);
         outv << "<div style='margin-left:20px;'></div>" << std::endl;
-        wSeg.writeHTML(outv);
+        wSegRight.writeHTML(outv);
         outv << "</div>" << std::endl;
 
       
