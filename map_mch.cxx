@@ -298,6 +298,19 @@ std::vector<std::string> colorGradiant()
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
+std::vector<int> gradient( int n, int m ) {
+  std::div_t q { 0, 0 };
+  std::vector<int> grad(m);
+  for( int i=1 ; i<m ; ++i ) {
+    q = std::div( n + q.rem, m-1 );
+    grad[i] = grad[i-1] + q.quot;
+  }
+  return grad;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 //Add Rentangle with 255 colors + Numbers (from 0 to 1)
 void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contour, o2::mch::contour::SVGWriter& w) {
     double rectWidth;  
@@ -618,6 +631,16 @@ for (auto isBendingPlane : {true, false}) {
       
     } 
 }
+  double realNmax = 254.4;
+  int roundNmax = int(realNmax) +1;
+
+  for( int i : gradient(roundNmax,11) ){
+
+    std::cout << i << ' ';
+     
+  }
+  
+  std::cout << '\n';
 
   return 0;
 }
