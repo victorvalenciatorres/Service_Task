@@ -296,121 +296,6 @@ std::vector<std::string> colorGradiant()
 
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
-
-std::vector<int> gradient( int n, int m ) {
-  std::div_t q { 0, 0 };
-  std::vector<int> grad(m);
-  for( int i=1 ; i<m ; ++i ) {
-    q = std::div( n + q.rem, m-1 );
-    grad[i] = grad[i-1] + q.quot;
-  }
-  return grad;
-}
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//Add Rentangle with 255 colors + Numbers (from 0 to 1)
-void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contour, o2::mch::contour::SVGWriter& w) {
-    double rectWidth;  
-    double rectHeight;  
-    double rectX;  
-    double rectY;  
-
-    double step = 1.0 / 10; 
-    double textX; 
-    double textY; 
-    double startY; 
-    double spacing; 
-
-    std::string title = ""; 
-
-    //size of rectangle depending on chamber
-    if (nChamber == 1 || nChamber == 2) {
-        rectWidth = 10;
-        rectHeight = 200;
-        rectX = 110;
-        rectY = -96;
-
-        textX = rectX + rectWidth + 5;
-        startY = 82 + rectY + rectHeight / 2;
-        spacing = 1 + rectHeight / 11;
-        w.text(title, textX - 5, startY -190); 
-    } else if (nChamber == 3 || nChamber == 4) {
-        rectWidth = 20;
-        rectHeight = 200;
-        rectX = 130;
-        rectY = -94;
-
-        textX = rectX + rectWidth + 5;
-        startY = 82 + rectY + rectHeight / 2;
-        spacing = 1 + rectHeight / 11;
-        w.text(title, textX - 7, startY -190); 
-    } else if (nChamber == 5 || nChamber == 6) { 
-        rectWidth = 20;
-        rectHeight = 225;
-        rectX = 175;
-        rectY = -20;
-
-        textX = rectX + rectWidth + 5;
-        startY = 90 + rectY + rectHeight / 2;
-        spacing = 0.7 + rectHeight / 11;
-        w.text(title, textX - 5, startY -210); 
-    } else if (nChamber == 7 || nChamber == 8) {
-        rectWidth = 30;
-        rectHeight = 325;
-        rectX = 270;
-        rectY = -20;
-
-        textX = rectX + rectWidth + 5;
-        startY = 130 + rectY + rectHeight / 2;
-        spacing = 1.5 + rectHeight / 11;
-        w.text(title, textX - 5, startY -300); 
-    } else if (nChamber == 9 || nChamber == 10) {
-        rectWidth = 35;
-        rectHeight = 325;
-        rectX = 270;
-        rectY = -20;
-
-        textX = rectX + rectWidth + 5;
-        startY = 129 + rectY + rectHeight / 2;
-        spacing = 1.5 + rectHeight / 11;
-        w.text(title, textX - 5, startY -300); 
-    }
-
-    double stepX = rectWidth / 255.0;
-    double stepY = rectHeight / 255.0;
-
-    for (int i = 0; i < 255; i++) {
-        double startY = rectY + i * stepY;
-        double endY = rectY + (i + 1) * stepY;
-
-        double startX = rectX;
-        double endX = rectX + rectWidth;
-
-        contour.addPolygon({
-            {startX, startY},
-            {endX, startY},
-            {endX, endY},
-            {startX, endY}
-        });
-    }
-
-    //Produces Numbers from 0 to 1
-    double n;
-    for (int i = 10; i >= 0; i--) {
-        n = i * step; 
-        double textY = startY + (1 - i) * spacing; 
-
-        int integerPart = static_cast<int>(n); 
-        int decimalPart = static_cast<int>((n - integerPart) * 10); 
-
-        std::string numberString = std::to_string(integerPart) + "." + std::to_string(decimalPart);
-        w.text(numberString, textX, textY);
-    }
-
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
@@ -458,6 +343,138 @@ double calculateMaxRatio(int nChamber, bool bending, const TH1F* ClustersperDual
     return maxRatio;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+
+std::vector<int> numberGradient(int n, int m) {
+    std::vector<int> grad(m);
+    int q = 0;
+    int rem = 0;  //reminder ...
+    for (int i = 1; i < m; ++i) {
+        q = (n + rem) / (m - 1);
+        rem = (n + rem) % (m - 1);
+        grad[i] = grad[i - 1] + q;
+    }
+    return grad;
+}
+
+
+std::vector<double> numberGradient2(double n, int m) {
+    std::vector<double> grad;
+    double step = n / (m - 1);
+    for (int i = 0; i < m; ++i) {
+        grad.push_back(i * step);
+    }
+    return grad;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//Add Rentangle with 255 colors + Numbers (from 0 to 1)
+void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contour, o2::mch::contour::SVGWriter& w, double MaxRatio) {
+    double rectWidth;  
+    double rectHeight;  
+    double rectX;  
+    double rectY;  
+
+    double step = 1.0 / 10; 
+    double textX; 
+    double textY; 
+    double startY; 
+    double spacing; 
+
+    std::string title = "#/cm^2" ; 
+
+    //size of rectangle depending on chamber
+    if (nChamber == 1 || nChamber == 2) {
+        rectWidth = 10;
+        rectHeight = 200;
+        rectX = 110;
+        rectY = -96;
+
+        textX = rectX + rectWidth + 5;
+        startY = 82 + rectY + rectHeight / 2;
+        spacing = 1 + rectHeight / 11;
+        w.text(title, textX - 19, startY -190); 
+    } else if (nChamber == 3 || nChamber == 4) {
+        rectWidth = 20;
+        rectHeight = 200;
+        rectX = 130;
+        rectY = -94;
+
+        textX = rectX + rectWidth + 5;
+        startY = 82 + rectY + rectHeight / 2;
+        spacing = 1 + rectHeight / 11;
+        w.text(title, textX -25, startY -190); 
+    } else if (nChamber == 5 || nChamber == 6) { 
+        rectWidth = 20;
+        rectHeight = 225;
+        rectX = 175;
+        rectY = -20;
+
+        textX = rectX + rectWidth + 5;
+        startY = 90 + rectY + rectHeight / 2;
+        spacing = 0.7 + rectHeight / 11;
+        w.text(title, textX - 25, startY -210); 
+    } else if (nChamber == 7 || nChamber == 8) {
+        rectWidth = 30;
+        rectHeight = 325;
+        rectX = 270;
+        rectY = -20;
+
+        textX = rectX + rectWidth + 5;
+        startY = 130 + rectY + rectHeight / 2;
+        spacing = 1.5 + rectHeight / 11;
+        w.text(title, textX - 30, startY -300); 
+    } else if (nChamber == 9 || nChamber == 10) {
+        rectWidth = 35;
+        rectHeight = 325;
+        rectX = 270;
+        rectY = -20;
+
+        textX = rectX + rectWidth + 5;
+        startY = 129 + rectY + rectHeight / 2;
+        spacing = 1.5 + rectHeight / 11;
+        w.text(title, textX - 30, startY -300); 
+    }
+
+    double stepX = rectWidth / 255.0;
+    double stepY = rectHeight / 255.0;
+
+    for (int i = 0; i < 255; i++) {
+        double startY = rectY + i * stepY;
+        double endY = rectY + (i + 1) * stepY;
+
+        double startX = rectX;
+        double endX = rectX + rectWidth;
+
+        contour.addPolygon({
+            {startX, startY},
+            {endX, startY},
+            {endX, endY},
+            {startX, endY}
+        });
+    }
+
+    double realNmax =  MaxRatio;
+    int roundNmax = int(realNmax) +1;
+    //std::vector<int>numbers = numberGradient(roundNmax,11);
+    std::vector<double>numbers = numberGradient2(realNmax,11);
+    
+
+    //Produces Numbers 
+    double n;
+    for (int i = 10; i >= 0; i--) {
+        n = i * step; 
+        double textY = startY + (1 - i) * spacing; 
+
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << numbers[i];
+        std::string numberString = ss.str();
+        w.text(numberString, textX, textY);
+    }
+
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
@@ -523,7 +540,7 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
    
     // Add rectangle for color scale + text:
     o2::mch::contour::Contour<double> rectangleContour;
-    addRectangleContour(nChamber, rectangleContour, w);
+    addRectangleContour(nChamber, rectangleContour, w, maxratio);
 
     for(auto i =0; i<rectangleContour.size();i++){
 
@@ -589,8 +606,8 @@ getAllDualSampas(10);
 
 // Define the bounding boxes for the 10 images:
 std::vector<o2::mch::contour::BBox<double>> bboxes = {
-    {-150, -150, 150, 150},
-    {-150, -150, 150, 150},
+    {-175, -175, 175, 175},
+    {-175, -175, 175, 175},
     {-200, -200, 200, 200},
     {-200, -200, 200, 200},
     {-240, -240, 240, 240},
@@ -631,16 +648,8 @@ for (auto isBendingPlane : {true, false}) {
       
     } 
 }
-  double realNmax = 254.4;
-  int roundNmax = int(realNmax) +1;
 
-  for( int i : gradient(roundNmax,11) ){
 
-    std::cout << i << ' ';
-     
-  }
-  
-  std::cout << '\n';
 
   return 0;
 }
