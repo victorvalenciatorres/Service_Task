@@ -345,20 +345,7 @@ double calculateMaxRatio(int nChamber, bool bending, const TH1F* ClustersperDual
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-std::vector<int> numberGradient(int n, int m) {
-    std::vector<int> grad(m);
-    int q = 0;
-    int rem = 0;  //reminder ...
-    for (int i = 1; i < m; ++i) {
-        q = (n + rem) / (m - 1);
-        rem = (n + rem) % (m - 1);
-        grad[i] = grad[i - 1] + q;
-    }
-    return grad;
-}
-
-
-std::vector<double> numberGradient2(double n, int m) {
+std::vector<double> numberGradient(double n, int m) {
     std::vector<double> grad;
     double step = n / (m - 1);
     for (int i = 0; i < m; ++i) {
@@ -457,9 +444,7 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
     }
 
     double realNmax =  MaxRatio;
-    int roundNmax = int(realNmax) +1;
-    //std::vector<int>numbers = numberGradient(roundNmax,11);
-    std::vector<double>numbers = numberGradient2(realNmax,11);
+    std::vector<double>numbers = numberGradient(realNmax,11);
     
 
     //Produces Numbers 
