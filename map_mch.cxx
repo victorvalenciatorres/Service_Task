@@ -240,6 +240,7 @@ TH1F* getrootHistogram2() {
     return ClustersperDualSampa;
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
 //Storing clusters and dsindex from TH1F histogram
@@ -464,7 +465,7 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
 // Creating Chambers in SVG format
-void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation, double maxRatio) {
+void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation, double maxRatio, bool IsNormalizedPerDSArea) {
 
 
     int nclustermax = ClustersperDualSampa->GetMaximum();
@@ -485,6 +486,7 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
     std::vector<std::pair<double, int>> areas; // Vector with Areas of DS Contours paired with dsIndex
 
      double maxratio = calculateMaxRatio( nChamber, bending, ClustersperDualSampa, transformation);  //Maximun Ratio
+    
 
     // Contours of all deId transformated  + SVGWRITER of all dsContourOut bien
     for (auto deId : deIds) {
@@ -509,7 +511,16 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
             int dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
             areas.push_back(std::make_pair(area, dsIndex));
 
-            int colorId = int((nClusters[dsIndex] / std::abs(areas.back().first)) / (maxratio + epsilon) * colors.size());
+            int colorId;
+
+            
+            if (IsNormalizedPerDSArea == true) {
+                 colorId = int((nClusters[dsIndex] / std::abs(areas.back().first)) / (maxratio + epsilon) * colors.size());
+            } else {
+                 colorId = int( nClusters[ dsIndex] / (nclustermax - epsilon) * colors.size());
+            }
+
+
             
             if (nClusters[dsIndex] == 0) {
                 w.contour(dualSampaContoursOut[i], "#FFFFFF");      // White color for 0 Cluster  <--->  "#00FF00" for Bright green color
@@ -543,45 +554,29 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
 int main(int argc, char* argv[])
 {
 
-  std::string prefix;
-  std::vector<int> detElemIds; 
-  std::vector<int> dualSampas; 
+    bool norm = false;
 
-  using Point = std::pair<double, double>;
-  std::vector<std::string> pointStrings;
-  std::vector<Point> points;
-  po::variables_map vm;
-  po::options_description generic("Generic options");
+    po::variables_map vm;
+    po::options_description generic("Generic options");
 
-  generic.add_options()("help", "produce help message")("hidepads", "hide pad outlines")(
-    "hidedualsampas", "hide dualsampa outlines")("hidedes", "hide detection element outline")(
-    "hidepadchannels", "hide pad channel numbering")("de", po::value<std::vector<int>>(&detElemIds),
-                                                     "which detection element to consider")(
-    "prefix", po::value<std::string>(&prefix)->default_value("seg"), "prefix used for outfile filename(s)")(
-    "point", po::value<std::vector<std::string>>(&pointStrings), "points to show")("all", "use all detection elements");
+    generic.add_options()
+        ("help", "produce help message")
+        ("norm", "normalize per unit area"); 
 
-  po::options_description cmdline;
-  cmdline.add(generic);
+    po::options_description cmdline;
+    cmdline.add(generic);
 
-  po::store(po::command_line_parser(argc, argv).options(cmdline).run(), vm);
-  po::notify(vm);
+    po::store(po::command_line_parser(argc, argv).options(cmdline).run(), vm);
+    po::notify(vm);
 
-    std::cout << "deId:" << detElemIds[0] << "\n";
+    if (vm.count("help")) {
+        std::cout << generic << "\n";
+        return 2;
+    }
 
-  if (vm.count("help")) {
-    std::cout << generic << "\n";
-    return 2;
-  }
-
-  if (vm.count("de") && vm.count("all")) {
-    std::cout << "--all and --de options are mutually exclusive. --all will be used\n";
-    detElemIds.clear();
-  }
-
-  if (vm.count("all")) {
-    o2::mch::mapping::forOneDetectionElementOfEachSegmentationType(
-      [&detElemIds](int detElemId) { detElemIds.push_back(detElemId); });
-  }
+    if (vm.count("norm")) {
+        norm = true; 
+    }
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
@@ -605,7 +600,8 @@ std::vector<o2::mch::contour::BBox<double>> bboxes = {
 
 //Load Aligned Geometry from file.root
 std::string name = "o2sim_geometry-aligned.root";
-    
+
+
 // Create with SVGWriter the 10 Chambers with their respective bounding boxes
 for (auto isBendingPlane : {true, false}) {
     for (int i = 0; i < 10; i++) {
@@ -619,10 +615,9 @@ for (auto isBendingPlane : {true, false}) {
         // Creating Left and Right Chambers  
         double maxRatioLeft = calculateMaxRatio(i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name));
         double maxRatioRight = calculateMaxRatio(i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name));
-        svgChamber(wSegLeft, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft);
-        svgChamber(wSegRight, i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), maxRatioRight);
+        svgChamber(wSegLeft, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft, norm);
+        svgChamber(wSegRight, i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), maxRatioRight, norm);
         
-
         // Write in HTML left and right chambers (using <div> tag)
         outv << "<div style='display:flex;justify-content:center'>" << std::endl;
         wSegLeft.writeHTML(outv);
@@ -633,8 +628,6 @@ for (auto isBendingPlane : {true, false}) {
       
     } 
 }
-
-
 
   return 0;
 }
