@@ -300,32 +300,39 @@ std::vector<std::string> colorGradiant()
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-//Calculation of Nmax (maximum of clusters for all chambers) <--> (maximum ratio of all Clusters/DSArea per chamber)
+//Calculation of Nmax (maximum of clusters per chamber) <--> (maximum ratio of Clusters/DSArea per chamber)
 double calculateNmax(int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation, bool IsNormalizedPerDSArea) {
+
+    // Load clusters from TH1F Histogram
+    auto nClusters_dsindex = processClustersperDualSampa(ClustersperDualSampa);
+    std::vector<int> nClusters = nClusters_dsindex.first;
+    std::vector<uint16_t> dsindex = nClusters_dsindex.second;
+
+    // Getting All DeIds for all Chambers
+    auto deIds = getAllDeIds(nChamber);
+    int dsIndex;
 
     double Nmax = 0.0;
 
-    if(IsNormalizedPerDSArea == false){
-
-        //Maximum number of clusters
-        Nmax = ClustersperDualSampa->GetMaximum();
-
-    } else{
-
-        //Load clusters from TH1F Histogram
-        auto nClusters_dsindex = processClustersperDualSampa(ClustersperDualSampa);
-        std::vector<int> nClusters = nClusters_dsindex.first;
-        std::vector<uint16_t> dsindex = nClusters_dsindex.second;
-
-        // Getting All DeIds for all Chambers
-        auto deIds = getAllDeIds(nChamber);
-
-        std::vector<std::pair<double, int>> areas; // Vector with Areas of DS Contours paired with dsIndex
+    if (IsNormalizedPerDSArea == false) {
+        // Calculate maximum number of clusters 
+        for (auto deId : deIds) {
+            auto dualSampaContoursOut = transformLocalToGlobal(deId, bending, transformation);
+            // Get the map index to dsId
+            auto dsIds = getDualSampasBorNB(deId, bending); 
+            for (auto i = 0; i < dualSampaContoursOut.size(); i++) {
+                // Get the local dsId
+                auto dsId = dsIds[i];
+                // Convert local dsId to global dsIndex (for a given deId)
+                dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
+                // Get maximum number of clusters
+                Nmax = std::max(Nmax, static_cast<double>(nClusters[dsIndex]));
+            }
+        }
+    } else {
+        // Calculate maximum ratio of clusters/DSArea
         double maxRatio = 0.0;
-        double ratio = 0.0;
-        int dsIndex;
 
-        // Contours of all deId transformed + all dsContourOut
         for (auto deId : deIds) {
             auto dualSampaContoursOut = transformLocalToGlobal(deId, bending, transformation);
             // Get the map index to dsId
@@ -340,22 +347,18 @@ double calculateNmax(int nChamber, bool bending, const TH1F* ClustersperDualSamp
                 auto dsId = dsIds[i];
                 // Convert local dsId to global dsIndex (for a given deId)
                 dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
-                // Create a pair of area and dsIndex and push it to the areas vector
-                areas.push_back(std::make_pair(area, dsIndex));
-            
-                ratio = nClusters[dsIndex] / std::abs(areas.back().first);
-                    
+                // Calculate the ratio of clusters to DS contour area
+                double ratio = nClusters[dsIndex] / std::abs(area);
                 maxRatio = std::max(maxRatio, ratio);
-
-                Nmax = maxRatio;
-
             }
         }
-    
+
+        Nmax = maxRatio;
     }
-    
+
     return Nmax;
 }
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
@@ -372,7 +375,7 @@ std::vector<double> numberGradient(double n, int m) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Add Rentangle with 255 colors + Numbers (from 0 to 1)
-void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contour, o2::mch::contour::SVGWriter& w, double MaxRatio) {
+void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contour, o2::mch::contour::SVGWriter& w, double Nmax) {
     double rectWidth;  
     double rectHeight;  
     double rectX;  
@@ -457,9 +460,7 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
         });
     }
 
-    double realNmax =  MaxRatio;
-    std::vector<double>numbers = numberGradient(realNmax,11);
-    
+    std::vector<double>numbers = numberGradient(Nmax,11);
 
     //Produces Numbers 
     double n;
@@ -480,9 +481,6 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
 // Creating Chambers in SVG format
 void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation, double maxRatio, bool IsNormalizedPerDSArea) {
 
-    //Maximum number of clusters
-    int nclustermax = ClustersperDualSampa->GetMaximum();
-
     //Load clusters from TH1F Histogram
     auto nClusters_dsindex = processClustersperDualSampa(ClustersperDualSampa);
     std::vector<int> nClusters = nClusters_dsindex.first;
@@ -494,13 +492,14 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
     //Getting all deIds for all Chambers
     auto deIds = getAllDeIds(nChamber);
 
-    double epsilon=1.e-6; //Small shift
+    double epsilon = 1.e-6; //Small shift
+
+    int colorId;
 
     std::vector<std::pair<double, int>> areas; // Vector with Areas of DS Contours paired with dsIndex
 
-     double maxratio = calculateNmax( nChamber, bending, ClustersperDualSampa, transformation, IsNormalizedPerDSArea);  //Maximun Ratio
+     double Nmax = calculateNmax( nChamber, bending, ClustersperDualSampa, transformation, IsNormalizedPerDSArea);  //Maximun Ratio
     
-
     // Contours of all deId transformated  + SVGWRITER of all dsContourOut bien
     for (auto deId : deIds) {
         auto dualSampaContoursOut = transformLocalToGlobal(deId, bending, transformation);
@@ -524,17 +523,12 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
             int dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
             areas.push_back(std::make_pair(area, dsIndex));
 
-            int colorId;
-
-            
             if (IsNormalizedPerDSArea == true) {
-                 colorId = int((nClusters[dsIndex] / std::abs(areas.back().first)) / (maxratio + epsilon) * colors.size());
+                 colorId = int((nClusters[dsIndex] / std::abs(areas.back().first)) / (Nmax + epsilon) * colors.size());
             } else {
-                 colorId = int( nClusters[ dsIndex] / (nclustermax - epsilon) * colors.size());
+                 colorId = int( nClusters[ dsIndex] / (Nmax + epsilon) * colors.size());
             }
 
-
-            
             if (nClusters[dsIndex] == 0) {
                 w.contour(dualSampaContoursOut[i], "#FFFFFF");      // White color for 0 Cluster  <--->  "#00FF00" for Bright green color
             } else {
@@ -549,7 +543,7 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
    
     // Add rectangle for color scale + text:
     o2::mch::contour::Contour<double> rectangleContour;
-    addRectangleContour(nChamber, rectangleContour, w, maxratio);
+    addRectangleContour(nChamber, rectangleContour, w, Nmax);
 
     for(auto i =0; i<rectangleContour.size();i++){
 
@@ -591,56 +585,54 @@ int main(int argc, char* argv[])
         norm = true; 
     }
 
+    // Get All dualSampas for 10 chambers
+    getAllDualSampas(10);
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+    // Define the bounding boxes for the 10 images:
+    std::vector<o2::mch::contour::BBox<double>> bboxes = {
+        {-175, -175, 175, 175},
+        {-175, -175, 175, 175},
+        {-200, -200, 200, 200},
+        {-200, -200, 200, 200},
+        {-240, -240, 240, 240},
+        {-240, -240, 240, 240},
+        {-350, -350, 350, 350},
+        {-450, -450, 450, 450},
+        {-450, -450, 450, 450},
+        {-450, -450, 450, 450}
+    };
 
-// Get All dualSampas for 10 chambers
-getAllDualSampas(10);
-
-// Define the bounding boxes for the 10 images:
-std::vector<o2::mch::contour::BBox<double>> bboxes = {
-    {-175, -175, 175, 175},
-    {-175, -175, 175, 175},
-    {-200, -200, 200, 200},
-    {-200, -200, 200, 200},
-    {-240, -240, 240, 240},
-    {-240, -240, 240, 240},
-    {-350, -350, 350, 350},
-    {-450, -450, 450, 450},
-    {-450, -450, 450, 450},
-    {-450, -450, 450, 450}
-};
-
-//Load Aligned Geometry from file.root
-std::string name = "o2sim_geometry-aligned.root";
+    //Load Aligned Geometry from file.root
+    std::string name = "o2sim_geometry-aligned.root";
 
 
-// Create with SVGWriter the 10 Chambers with their respective bounding boxes
-for (auto isBendingPlane : {true, false}) {
-    for (int i = 0; i < 10; i++) {
-        std::ofstream outv("CHAMBERS-" + std::to_string(i+1) + "-" +   //output file
-                        (isBendingPlane ? "B" : "NB") + ".html");
+    // Create with SVGWriter the 10 Chambers with their respective bounding boxes
+    for (auto isBendingPlane : {true, false}) {
+        for (int i = 0; i < 10; i++) {
+            std::ofstream outv("CHAMBERS-" + std::to_string(i+1) + "-" +   //output file
+                            (isBendingPlane ? "B" : "NB") + ".html");
 
-        // Creating bboxes 
-        o2::mch::contour::SVGWriter wSegLeft(bboxes[i]);
-        o2::mch::contour::SVGWriter wSegRight(bboxes[i]);
-       
-        // Creating Left and Right Chambers  
-        double maxRatioLeft = calculateNmax(i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name), norm);
-        double maxRatioRight = calculateNmax(i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), norm);
-        svgChamber(wSegLeft, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft, norm);
-        svgChamber(wSegRight, i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), maxRatioRight, norm);
+            // Creating bboxes 
+            o2::mch::contour::SVGWriter wSegLeft(bboxes[i]);
+            o2::mch::contour::SVGWriter wSegRight(bboxes[i]);
         
-        // Write in HTML left and right chambers (using <div> tag)
-        outv << "<div style='display:flex;justify-content:center'>" << std::endl;
-        wSegLeft.writeHTML(outv);
-        outv << "<div style='margin-left:20px;'></div>" << std::endl;
-        wSegRight.writeHTML(outv);
-        outv << "</div>" << std::endl;
+            // Creating Left and Right Chambers  
+            double maxRatioLeft = calculateNmax(i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name), norm);
+            double maxRatioRight = calculateNmax(i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), norm);
+            svgChamber(wSegLeft, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft, norm);
+            svgChamber(wSegRight, i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), maxRatioRight, norm);
+            
+            // Write in HTML left and right chambers (using <div> tag)
+            outv << "<div style='display:flex;justify-content:center'>" << std::endl;
+            wSegLeft.writeHTML(outv);
+            outv << "<div style='margin-left:20px;'></div>" << std::endl;
+            wSegRight.writeHTML(outv);
+            outv << "</div>" << std::endl;
 
-      
-    } 
-}
+        
+        } 
+    }
 
   return 0;
+
 }
