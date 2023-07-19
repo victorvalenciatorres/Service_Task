@@ -300,48 +300,61 @@ std::vector<std::string> colorGradiant()
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-//Calculation of the maximum ratio of all Clusters/DSArea
-double calculateMaxRatio(int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation) {
+//Calculation of Nmax (maximum of clusters for all chambers) <--> (maximum ratio of all Clusters/DSArea per chamber)
+double calculateNmax(int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation, bool IsNormalizedPerDSArea) {
 
-    auto nClusters_dsindex = processClustersperDualSampa(ClustersperDualSampa);
-    std::vector<int> nClusters = nClusters_dsindex.first;
-    std::vector<uint16_t> dsindex = nClusters_dsindex.second;
+    double Nmax = 0.0;
 
-    // Getting All DeIds for all Chambers
-    auto deIds = getAllDeIds(nChamber);
+    if(IsNormalizedPerDSArea == false){
 
-    std::vector<std::pair<double, int>> areas; // Vector with Areas of DS Contours paired with dsIndex
-    double maxRatio = 0.0;
-    double ratio = 0.0;
-    int dsIndex;
+        //Maximum number of clusters
+        Nmax = ClustersperDualSampa->GetMaximum();
 
-    // Contours of all deId transformed + all dsContourOut
-    for (auto deId : deIds) {
-        auto dualSampaContoursOut = transformLocalToGlobal(deId, bending, transformation);
-        // Get the map index to dsId
-        auto dsIds = getDualSampasBorNB(deId, bending); 
-        for (auto i = 0; i < dualSampaContoursOut.size(); i++) {
-            auto& contour = dualSampaContoursOut[i]; // Get the current contour
-            double area = 0.0; // Area of a DS Contour
-            for (const auto& poly : contour.getPolygons()) {
-                area += poly.signedArea();
+    } else{
+
+        //Load clusters from TH1F Histogram
+        auto nClusters_dsindex = processClustersperDualSampa(ClustersperDualSampa);
+        std::vector<int> nClusters = nClusters_dsindex.first;
+        std::vector<uint16_t> dsindex = nClusters_dsindex.second;
+
+        // Getting All DeIds for all Chambers
+        auto deIds = getAllDeIds(nChamber);
+
+        std::vector<std::pair<double, int>> areas; // Vector with Areas of DS Contours paired with dsIndex
+        double maxRatio = 0.0;
+        double ratio = 0.0;
+        int dsIndex;
+
+        // Contours of all deId transformed + all dsContourOut
+        for (auto deId : deIds) {
+            auto dualSampaContoursOut = transformLocalToGlobal(deId, bending, transformation);
+            // Get the map index to dsId
+            auto dsIds = getDualSampasBorNB(deId, bending); 
+            for (auto i = 0; i < dualSampaContoursOut.size(); i++) {
+                auto& contour = dualSampaContoursOut[i]; // Get the current contour
+                double area = 0.0; // Area of a DS Contour
+                for (const auto& poly : contour.getPolygons()) {
+                    area += poly.signedArea();
+                }
+                // Get the local dsId
+                auto dsId = dsIds[i];
+                // Convert local dsId to global dsIndex (for a given deId)
+                dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
+                // Create a pair of area and dsIndex and push it to the areas vector
+                areas.push_back(std::make_pair(area, dsIndex));
+            
+                ratio = nClusters[dsIndex] / std::abs(areas.back().first);
+                    
+                maxRatio = std::max(maxRatio, ratio);
+
+                Nmax = maxRatio;
+
             }
-            // Get the local dsId
-            auto dsId = dsIds[i];
-            // Convert local dsId to global dsIndex (for a given deId)
-            dsIndex = getDsIndexFromDsIdAndDeId(dsId, deId);
-            // Create a pair of area and dsIndex and push it to the areas vector
-            areas.push_back(std::make_pair(area, dsIndex));
-           
-            ratio = nClusters[dsIndex] / std::abs(areas.back().first);
-                  
-            maxRatio = std::max(maxRatio, ratio);
-
         }
+    
     }
     
-
-    return maxRatio;
+    return Nmax;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
@@ -467,7 +480,7 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
 // Creating Chambers in SVG format
 void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation, double maxRatio, bool IsNormalizedPerDSArea) {
 
-
+    //Maximum number of clusters
     int nclustermax = ClustersperDualSampa->GetMaximum();
 
     //Load clusters from TH1F Histogram
@@ -485,7 +498,7 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
 
     std::vector<std::pair<double, int>> areas; // Vector with Areas of DS Contours paired with dsIndex
 
-     double maxratio = calculateMaxRatio( nChamber, bending, ClustersperDualSampa, transformation);  //Maximun Ratio
+     double maxratio = calculateNmax( nChamber, bending, ClustersperDualSampa, transformation, IsNormalizedPerDSArea);  //Maximun Ratio
     
 
     // Contours of all deId transformated  + SVGWRITER of all dsContourOut bien
@@ -613,8 +626,8 @@ for (auto isBendingPlane : {true, false}) {
         o2::mch::contour::SVGWriter wSegRight(bboxes[i]);
        
         // Creating Left and Right Chambers  
-        double maxRatioLeft = calculateMaxRatio(i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name));
-        double maxRatioRight = calculateMaxRatio(i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name));
+        double maxRatioLeft = calculateNmax(i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name), norm);
+        double maxRatioRight = calculateNmax(i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), norm);
         svgChamber(wSegLeft, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft, norm);
         svgChamber(wSegRight, i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), maxRatioRight, norm);
         
