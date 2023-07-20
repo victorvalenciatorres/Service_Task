@@ -54,7 +54,11 @@ COMPILATION (commands):
 
 EXECUTION (command):
 
-    stage/bin/o2-mch-map_mch --hidepadchannels --hidepads --de 100 
+    stage/bin/o2-mch-map_mch --norm --green
+
+HELP MESSAGE (command):
+
+    stage/bin/o2-mch-map_mch --help 
 
 
 --------------------------------------------------------------------------------------
