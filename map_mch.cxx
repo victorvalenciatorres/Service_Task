@@ -577,7 +577,7 @@ int main(int argc, char* argv[])
 
     generic.add_options()
         ("help", "produce help message")
-        ("norm", "normalize per unit area")
+        ("normperarea", "normalize per unit area")
         ("green", "green color for 0 clusters"); 
 
     po::options_description cmdline;
@@ -591,7 +591,7 @@ int main(int argc, char* argv[])
         return 2;
     }
 
-    if (vm.count("norm")) {
+    if (vm.count("normperarea")) {
         norm = true; 
     }
 
