@@ -479,7 +479,7 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
 // Creating Chambers in SVG format
-void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation, double maxRatio, bool IsNormalizedPerDSArea) {
+void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, const TH1F* ClustersperDualSampa, o2::mch::geo::TransformationCreator transformation, double maxRatio, bool IsNormalizedPerDSArea, bool WhiteOrGreen) {
 
     //Load clusters from TH1F Histogram
     auto nClusters_dsindex = processClustersperDualSampa(ClustersperDualSampa);
@@ -488,6 +488,14 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
 
     //Colors Vector in HEX RBG format
     std::vector<std::string> colors = colorGradiant();
+
+    //Color for 0 clusters
+    std::string ColorFor0clusters;
+    if (WhiteOrGreen) {
+        ColorFor0clusters = "#00FF00"; // Green
+    } else {
+        ColorFor0clusters = "#FFFFFF"; // White
+    }
 
     //Getting all deIds for all Chambers
     auto deIds = getAllDeIds(nChamber);
@@ -530,7 +538,7 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
             }
 
             if (nClusters[dsIndex] == 0) {
-                w.contour(dualSampaContoursOut[i], "#FFFFFF");      // White color for 0 Cluster  <--->  "#00FF00" for Bright green color
+                w.contour(dualSampaContoursOut[i], ColorFor0clusters);  
             } else {
                 w.contour(dualSampaContoursOut[i], colors[colorId]);
             }
@@ -562,13 +570,15 @@ int main(int argc, char* argv[])
 {
 
     bool norm = false;
+    bool green = false;
 
     po::variables_map vm;
     po::options_description generic("Generic options");
 
     generic.add_options()
         ("help", "produce help message")
-        ("norm", "normalize per unit area"); 
+        ("norm", "normalize per unit area")
+        ("green", "green color for 0 clusters"); 
 
     po::options_description cmdline;
     cmdline.add(generic);
@@ -583,6 +593,10 @@ int main(int argc, char* argv[])
 
     if (vm.count("norm")) {
         norm = true; 
+    }
+
+     if (vm.count("green")) {
+        green = true; 
     }
 
     // Get All dualSampas for 10 chambers
@@ -619,8 +633,8 @@ int main(int argc, char* argv[])
             // Creating Left and Right Chambers  
             double maxRatioLeft = calculateNmax(i+1, isBendingPlane, getrootHistogram1(), loadGeometry(name), norm);
             double maxRatioRight = calculateNmax(i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), norm);
-            svgChamber(wSegLeft, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft, norm);
-            svgChamber(wSegRight, i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), maxRatioRight, norm);
+            svgChamber(wSegLeft, i+1, isBendingPlane, getrootHistogram1(), loadGeometry( name), maxRatioLeft, norm, green);
+            svgChamber(wSegRight, i+1, isBendingPlane, getrootHistogram2(), loadGeometry(name), maxRatioRight, norm, green);
             
             // Write in HTML left and right chambers (using <div> tag)
             outv << "<div style='display:flex;justify-content:center'>" << std::endl;
