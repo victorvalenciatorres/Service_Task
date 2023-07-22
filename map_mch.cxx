@@ -512,7 +512,7 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
         std::stringstream ss;
         n = i * step; 
         double textY = startY + (1 - i) * spacing; 
-        ss << std::fixed << std::setprecision(2) << numbers[i];
+        ss << std::fixed << std::setprecision(1) << numbers[i];
         std::string numberString = ss.str();
         w.text(numberString, textX, textY);
 
@@ -548,8 +548,6 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
 
     int colorId; 
 
-    double area = 0.0; 
-
     std::vector<std::pair<double, int>> areas; // Vector with Areas of DS Contours paired with dsIndex
 
     double Nmax = calculateNmax( nChamber, bending, ClustersperDualSampa, transformation, IsNormalizedPerDSArea);  //Maximun Ratio
@@ -568,7 +566,8 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
         for (auto i = 0; i < dualSampaContoursOut.size(); i++) {
 
             auto& contour = dualSampaContoursOut[i]; 
-
+            double area = 0.0; 
+            
             for (const auto& poly : contour.getPolygons()) {
                 area += poly.signedArea();
             }
