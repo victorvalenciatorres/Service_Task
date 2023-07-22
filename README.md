@@ -15,32 +15,31 @@ Input Files used:
 
     - ClustersMCH.root
     - ClustersMCH_LHC22t.root
-    - o2sim_geometry-aligned.json
+    - o2sim_geometry-aligned.root
 
 --------------------------------------------------------------------------------------
 
 
-MODIFICATIONS:
+src File:
 
-    Modification in src File:
+    - map_mch.cxx
 
-        - map_mch.cxx
-
-        PATH: alice/O2/Detectors/MUON/MCH/GlobalMapping/src/map_mch.cxx
-
-
-    Modification in Include File:
-
-        - svgWriter.h
-
-        PATH:  alice/O2/Detectors/MUON/MCH/Contour/include/MCHContour/SVGWriter.h
+    PATH: alice/O2/Detectors/MUON/MCH/Evaluation/src/map_mch.cxx
+    
 
 
-    Modification in CMakeList:
+modification in Include File:
 
-        - CMakeLists.txt 
+    - svgWriter.h
 
-        PATH: alice/O2/Detectors/MUON/MCH/GlobalMapping/CMakeLists.txt
+    PATH:  alice/O2/Detectors/MUON/MCH/Contour/include/MCHContour/SVGWriter.h
+
+
+CMakeList:
+
+    - CMakeLists.txt 
+
+    PATH: alice/O2/Detectors/MUON/MCH/Evaluation/CMakeLists.txt
 
 
 --------------------------------------------------------------------------------------
@@ -48,13 +47,13 @@ MODIFICATIONS:
 
 COMPILATION (commands):
 
-    cd alice ==>    alienv enter O2/latest ninja/latest
+    cd alice ==>    alienv enter O2/latest
 
     cd sw/BUILD/O2-latest/O2 ==>   cmake --build . 
 
 EXECUTION (command):
 
-    stage/bin/o2-mch-map_mch --norm --green
+    stage/bin/o2-mch-map_mch --normperarea --green
 
 HELP MESSAGE (command):
 
