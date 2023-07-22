@@ -235,7 +235,7 @@ TH1F* getrootHistogram1() {
 
 TH1F* getrootHistogram2() {
 
-    TFile* file = TFile::Open("/Users/valencia/Desktop/emilie/clusters1.root");
+    TFile* file = TFile::Open("/Users/valencia/Desktop/Simulations/Clusters_Bending.root");
     TH1F* ClustersperDualSampa = (TH1F*)file->Get("Clusters");
     return ClustersperDualSampa;
 }
@@ -375,7 +375,7 @@ std::vector<double> numberGradient(double n, int m) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Add Rentangle with 255 colors + Numbers (from 0 to 1)
-void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contour, o2::mch::contour::SVGWriter& w, double Nmax) {
+void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contour, o2::mch::contour::SVGWriter& w, double Nmax, bool IsNormalizedPerDSArea) {
     double rectWidth;  
     double rectHeight;  
     double rectX;  
@@ -387,7 +387,19 @@ void addRectangleContour(int nChamber, o2::mch::contour::Contour<double>& contou
     double startY; 
     double spacing; 
 
-    std::string title = "#/cm^2" ; 
+    std::string title;
+
+    if (IsNormalizedPerDSArea == false){
+
+    title = "Nclusters"; 
+
+    } else {
+
+    title = "#/cm^2"; 
+
+    };
+
+    
 
     //size of rectangle depending on chamber
     if (nChamber == 1 || nChamber == 2) {
@@ -551,7 +563,7 @@ void svgChamber(o2::mch::contour::SVGWriter& w, int nChamber, bool bending, cons
    
     // Add rectangle for color scale + text:
     o2::mch::contour::Contour<double> rectangleContour;
-    addRectangleContour(nChamber, rectangleContour, w, Nmax);
+    addRectangleContour(nChamber, rectangleContour, w, Nmax, IsNormalizedPerDSArea);
 
     for(auto i =0; i<rectangleContour.size();i++){
 
@@ -608,9 +620,9 @@ int main(int argc, char* argv[])
         {-175, -175, 175, 175},
         {-200, -200, 200, 200},
         {-200, -200, 200, 200},
-        {-240, -240, 240, 240},
-        {-240, -240, 240, 240},
-        {-350, -350, 350, 350},
+        {-260, -260, 260, 260},
+        {-260, -260, 260, 260},
+        {-360, -360, 360, 360},
         {-450, -450, 450, 450},
         {-450, -450, 450, 450},
         {-450, -450, 450, 450}
