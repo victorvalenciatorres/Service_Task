@@ -11,16 +11,16 @@ The main objective of this code is to spot these  issues not included in the sta
 
 --------------------------------------------------------------------------------------
 
-Input Files used: 
+Input files used: 
 
-    - ClustersMCH.root
+    - Clusters_Bending.root
     - ClustersMCH_LHC22t.root
     - o2sim_geometry-aligned.root
 
 --------------------------------------------------------------------------------------
 
 
-src File:
+Src file:
 
     - map_mch.cxx
 
@@ -28,7 +28,7 @@ src File:
     
 
 
-modification in Include File:
+Modification in include file:
 
     - svgWriter.h
 
