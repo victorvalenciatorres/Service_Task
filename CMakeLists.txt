@@ -44,7 +44,7 @@ o2_add_executable(
     map_mch
     SOURCES src/map_mch.cxx  
     COMPONENT_NAME mch
-    PUBLIC_LINK_LIBRARIES O2::MCHMappingSegContour O2::MCHMappingImpl3 O2::MCHMappingInterface O2::MCHContour O2::MCHGeometryCreator O2::MCHGeometryTransformer O2::MCHConstants O2::MCHGlobalMapping O2::MCHMappingImpl4
+    PUBLIC_LINK_LIBRARIES O2::MCHMappingSegContour O2::MCHMappingImpl4 O2::MCHMappingInterface O2::MCHContour O2::MCHGeometryCreator O2::MCHGeometryTransformer O2::MCHConstants O2::MCHGlobalMapping
     Boost::program_options)
     
   
