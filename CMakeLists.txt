@@ -9,62 +9,24 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2_add_library(MCHGlobalMapping
-        SOURCES
-          src/ChannelCode.cxx
-          src/DsIndex.cxx
-          src/HV.cxx
-          src/LV.cxx
-          src/Mapper.cxx
-          src/Quadrant.cxx
-          src/Slat.cxx
-        PUBLIC_LINK_LIBRARIES O2::MCHRawElecMap
-                              O2::MCHMappingInterface
-                              O2::MCHConditions
-        PRIVATE_LINK_LIBRARIES O2::MCHConstants)
+o2_add_library(MCHEvaluation
+               SOURCES
+                 src/ExtendedTrack.cxx
+               PUBLIC_LINK_LIBRARIES
+                  O2::DataFormatsMCH
+                  O2::MCHTracking
+                  fmt::fmt)
 
-o2_target_root_dictionary(MCHGlobalMapping
+o2_target_root_dictionary(MCHEvaluation
                           HEADERS
-                            include/MCHGlobalMapping/ChannelCode.h)
+                            include/MCHEvaluation/ExtendedTrack.h
+                          LINKDEF src/MCHEvaluationLinkDef.h)
+
 
 o2_add_executable(
-        global-mapper
-        SOURCES src/global-mapper.cxx
-        COMPONENT_NAME mch
-        PUBLIC_LINK_LIBRARIES Boost::program_options
-                              O2::DataFormatsMCH
-                              O2::MCHGlobalMapping
-                              O2::MCHMappingImpl4
-                              RapidJSON::RapidJSON)
-  
-
-  
-
-  o2_add_executable(
-    map_mch
-    SOURCES src/map_mch.cxx  
-    COMPONENT_NAME mch
-    PUBLIC_LINK_LIBRARIES O2::MCHMappingSegContour O2::MCHMappingImpl4 O2::MCHMappingInterface O2::MCHContour O2::MCHGeometryCreator O2::MCHGeometryTransformer O2::MCHConstants O2::MCHGlobalMapping
-    Boost::program_options)
+  map_mch
+  SOURCES src/map_mch.cxx  
+  COMPONENT_NAME mch
+  PUBLIC_LINK_LIBRARIES O2::MCHMappingSegContour O2::MCHMappingImpl4 O2::MCHMappingInterface O2::MCHContour O2::MCHGeometryCreator O2::MCHGeometryTransformer O2::MCHConstants O2::MCHGlobalMapping
+  Boost::program_options)
     
-  
-    
-
-if(BUILD_TESTING)
-
-  o2_add_test(
-    global-mapper
-    SOURCES src/testGlobalMapper.cxx
-    COMPONENT_NAME mch
-    LABELS "muon;mch;dcs"
-    PUBLIC_LINK_LIBRARIES O2::MCHGlobalMapping O2::MCHMappingImpl4)
-
-  o2_add_test(
-    channelcode
-    SOURCES src/testChannelCode.cxx
-    COMPONENT_NAME mch
-    LABELS muon;mch
-    PUBLIC_LINK_LIBRARIES O2::MCHGlobalMapping O2::MCHMappingImpl4)
-
-endif()
-
