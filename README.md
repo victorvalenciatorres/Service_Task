@@ -53,11 +53,11 @@ COMPILATION (commands):
 
 EXECUTION (command):
 
-    cd InputFiles  ==>   alice/sw/BUILD/O2-latest/O2/stage/bin/o2-mch-map_mch --green --normperarea --rootfileleft DATA_QC.root --rootfileright MC_QC.root 
+    cd InputFiles  ==>   o2-mch-map_mch --green --normperarea --rootfileleft DATA_QC.root --rootfileright MC_QC.root 
 
 HELP MESSAGE (command):
 
-    alice/sw/BUILD/O2-latest/O2/stage/bin/stage/bin/o2-mch-map_mch --help 
+    o2-mch-map_mch --help 
 
 OPEN OUTPUT FILES: 
 

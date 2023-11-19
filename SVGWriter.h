@@ -26,142 +26,135 @@
 
 namespace o2
 {
-  namespace mch
+namespace mch
+{
+namespace contour
+{
+
+class SVGWriter
+{
+
+ public:
+  SVGWriter(o2::mch::contour::BBox<double> viewingBox, int size = 1024)
+    : mSVGBuffer{},
+      mStyleBuffer{},
+      mWidth{size},
+      mHeight{static_cast<int>(std::round(size * viewingBox.height() / viewingBox.width()))},
+      mViewingBox{viewingBox}
   {
-    namespace contour
-    {
+  }
 
-      class SVGWriter
-      {
+  template <typename T>
+  SVGWriter& operator<<(T a)
+  {
+    mSVGBuffer << a;
+    return *this;
+  }
 
-      public:
-        SVGWriter(o2::mch::contour::BBox<double> viewingBox, int size = 1024)
-            : mSVGBuffer{},
-              mStyleBuffer{},
-              mWidth{size},
-              mHeight{static_cast<int>(std::round(size * viewingBox.height() / viewingBox.width()))},
-              mViewingBox{viewingBox}
-        {
-        }
+  void svgGroupStart(const std::string& classname)
+  {
+    mSVGBuffer << R"(<g class=")" << classname << R"(">)"
+               << "\n";
+  }
 
-        template <typename T>
-        SVGWriter &operator<<(T a)
-        {
-          mSVGBuffer << a;
-          return *this;
-        }
+  void svgGroupEnd() { mSVGBuffer << "</g>\n"; }
 
-        void svgGroupStart(const std::string &classname)
-        {
-          mSVGBuffer << R"(<g class=")" << classname << R"(">)"
-                     << "\n";
-        }
+  void box(double x, double y, double w, double h)
+  {
+    mSVGBuffer << boost::format(R"(<rect x="%f" y="%f" width="%f" height="%f"/>)") % x % y % w % h << "\n";
+  }
 
-        void svgGroupEnd() { mSVGBuffer << "</g>\n"; }
+  void text(const std::string& text, double x, double y)
+  {
+    mSVGBuffer << boost::format(R"(<text x="%f" y="%f">%s</text>)") % x % y % text.c_str() << "\n";
+  }
 
-        void box(double x, double y, double w, double h)
-        {
-          mSVGBuffer << boost::format(R"(<rect x="%f" y="%f" width="%f" height="%f"/>)") % x % y % w % h << "\n";
-        }
+  template <typename T>
+  void polygon(const o2::mch::contour::Polygon<T>& p)
+  {
+    mSVGBuffer << R"(<polygon fill="blue" points=")";
+    auto vertices = getVertices(p);
+    for (auto j = 0; j < vertices.size(); ++j) {
+      auto v = vertices[j];
+      mSVGBuffer << v.x << "," << v.y << ' ';
+    }
+    mSVGBuffer << R"("/>)"
+               << "\n";
+  }
 
-        void text(const std::string &text, double x, double y)
-        {
-          mSVGBuffer << boost::format(R"(<text x="%f" y="%f">%s</text>)") % x % y % text.c_str() << "\n";
-        }
+  template <typename T>
+  void contour(const o2::mch::contour::Contour<T>& c)
+  {
+    for (auto& p : c.getPolygons()) {
+      polygon(p);
+    }
+  }
 
-        template <typename T>
-        void polygon(const o2::mch::contour::Polygon<T> &p)
-        {
-          // modification
-          mSVGBuffer << R"(<polygon fill="blue" points=")";
-          auto vertices = getVertices(p);
-          for (auto j = 0; j < vertices.size(); ++j)
-          {
-            auto v = vertices[j];
-            mSVGBuffer << v.x << "," << v.y << ' ';
-          }
-          mSVGBuffer << R"("/>)"
-                     << "\n";
-        }
+  template <typename T>
+  void polygon(const o2::mch::contour::Polygon<T>& p, const std::string& fillColor)
+  {
+    // modification
+    mSVGBuffer << R"(<polygon fill=")" << fillColor << R"(" points=")";
+    auto vertices = getVertices(p);
+    for (auto j = 0; j < vertices.size(); ++j) {
+      auto v = vertices[j];
+      mSVGBuffer << v.x << "," << v.y << ' ';
+    }
+    mSVGBuffer << R"("/>)"
+               << "\n";
+  }
 
-        template <typename T>
-        void contour(const o2::mch::contour::Contour<T> &c)
-        {
-          for (auto &p : c.getPolygons())
-          {
-            polygon(p);
-          }
-        }
+  template <typename T>
+  void contour(const o2::mch::contour::Contour<T>& c, const std::string& color)
+  {
 
-        template <typename T>
-        void polygon(const o2::mch::contour::Polygon<T> &p, const std::string &fillColor)
-        {
-          // modification
-          mSVGBuffer << R"(<polygon fill=")" << fillColor << R"(" points=")";
-          auto vertices = getVertices(p);
-          for (auto j = 0; j < vertices.size(); ++j)
-          {
-            auto v = vertices[j];
-            mSVGBuffer << v.x << "," << v.y << ' ';
-          }
-          mSVGBuffer << R"("/>)"
-                     << "\n";
-        }
+    for (auto& p : c.getPolygons()) {
+      polygon(p, color);
+    }
+  }
 
-        template <typename T>
-        void contour(const o2::mch::contour::Contour<T> &c, const std::string &color)
-        {
+  void points(const std::vector<std::pair<double, double>>& pts, double radius = 0.05)
+  {
+    for (auto& p : pts) {
+      mSVGBuffer << boost::format(R"(<circle cx="%f" cy="%f" r="%f"/>)") % p.first % p.second % radius << "\n";
+    }
+  }
 
-          for (auto &p : c.getPolygons())
-          {
-            polygon(p, color);
-          }
-        }
+  void addStyle(const std::string& style) { mStyleBuffer << style << "\n"; }
 
-        void points(const std::vector<std::pair<double, double>> &pts, double radius = 0.05)
-        {
-          for (auto &p : pts)
-          {
-            mSVGBuffer << boost::format(R"(<circle cx="%f" cy="%f" r="%f"/>)") % p.first % p.second % radius << "\n";
-          }
-        }
+  void writeStyle(std::ostream& os) { os << "<style>\n"
+                                         << mStyleBuffer.str() << "</style>\n"; }
 
-        void addStyle(const std::string &style) { mStyleBuffer << style << "\n"; }
+  void writeSVG(std::ostream& os)
+  {
+    os << boost::format(R"(<svg width="%d" height="%d" viewBox="%f %f %f %f">)") % mWidth %
+            mHeight % mViewingBox.xmin() % mViewingBox.ymin() % mViewingBox.width() % mViewingBox.height();
 
-        void writeStyle(std::ostream &os) { os << "<style>\n"
-                                               << mStyleBuffer.str() << "</style>\n"; }
+    os << mSVGBuffer.str();
 
-        void writeSVG(std::ostream &os)
-        {
-          os << boost::format(R"(<svg width="%d" height="%d" viewBox="%f %f %f %f">
-)") % mWidth %
-                    mHeight % mViewingBox.xmin() % mViewingBox.ymin() % mViewingBox.width() % mViewingBox.height();
+    os << "</svg>";
+  }
 
-          os << mSVGBuffer.str();
+  void writeHTML(std::ostream& os)
+  {
+    os << "<html>\n";
+    writeStyle(os);
+    os << "<body>\n";
+    writeSVG(os);
+    os << "</body>\n";
+    os << "</html>\n";
+  }
 
-          os << "</svg>";
-        }
+ private:
+  std::stringstream mSVGBuffer;
+  std::stringstream mStyleBuffer;
+  int mWidth;
+  int mHeight;
+  o2::mch::contour::BBox<double> mViewingBox;
+};
 
-        void writeHTML(std::ostream &os)
-        {
-          os << "<html>\n";
-          writeStyle(os);
-          os << "<body>\n";
-          writeSVG(os);
-          os << "</body>\n";
-          os << "</html>\n";
-        }
-
-      private:
-        std::stringstream mSVGBuffer;
-        std::stringstream mStyleBuffer;
-        int mWidth;
-        int mHeight;
-        o2::mch::contour::BBox<double> mViewingBox;
-      };
-
-    } // namespace contour
-  }   // namespace mch
+} // namespace contour
+} // namespace mch
 } // namespace o2
 
 #endif
