@@ -1,13 +1,12 @@
 # HOW TO GET THE INPUT FILES
  INPUT FILES:
  `o2sim_geometry-aligned.root`
+ `MC_QC.root`
 `DATA_QC.root`
-`MC_QC.root`
 
 
 
-# o2sim_geometry-aligned.root
-
+# Aligned Geometry File:
 
 ```shell
 
@@ -17,23 +16,7 @@ o2-sim-serial --timestamp 1663632000000 -n 10 -g fwmugen -m HALL MAG DIPO COMP P
 - The output file produced: `o2sim_geometry-aligned.root`
 
 
-
-# DATA_QC.root
-
-
-```shell
-
-o2-ctf-reader-workflow --ctf-input /Volumes/LaData/alice/data/2022/LHC22t/529691/compact -max-tf 10 --onlyDet MCH \ | o2-mch-reco-workflow --disable-mc --disable-root-input \ | o2-qc --config json://./mch-clustermap.json --local batch="DATA_QC.root"
-
-
-```
-
-- The output file produced: `DATA_QC.root`
-
-
-
-
-# MC_QC.root
+# MC file
 SIMULATIONS:
 - Go to lxplus : `ssh -X youlogin@lxplus.cern.ch`
 - Source the environment : `source /cvmfs/alice-nightlies.cern.ch/bin/alienv enter VO_ALICE@O2sim::v20230413-1`
@@ -56,7 +39,6 @@ DIGITS (this can be done locally with O2 Enviroment):
 ```
 
 
-
 RECONSTRUCTION (this can be done locally  with QC Environment):
 
 ```shell
@@ -67,3 +49,16 @@ o2-mch-reco-workflow -b | o2-qc --config json://./qc-mch-clusters.json --local-b
 
 
 - The output file produced: `MC_QC.root`
+
+
+# Data File
+
+
+```shell
+
+o2-ctf-reader-workflow --ctf-input /Volumes/LaData/alice/data/2022/LHC22t/529691/compact -max-tf 10 --onlyDet MCH \ | o2-mch-reco-workflow --disable-mc --disable-root-input \ | o2-qc --config json://./mch-clustermap.json --local batch="DATA_QC.root"
+
+
+```
+
+- The output file produced: `DATA_QC.root`
