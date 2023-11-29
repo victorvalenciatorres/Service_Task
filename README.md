@@ -22,29 +22,27 @@ root[0] o2::mch::eval::drawAll("compare.root")
  - Goal : The general purpose is to track "unexpected" detector issues not well reproduced with MC simulations. These problems generate non-negligible bias in Acc*Eff corrections resulting in large tracking systematic uncertainties. During the data reconstruction, the status of the detector is calculated with the CCDB which is used to discard most of the detector issues. This status map is built with information based on pedestals, occupancy etc. (high and low voltage will be included soon in the statusmap.) Nevertheless, some detector issues (e.g. a cable swapping) are not well detected online and consequently not properly reproduced by the CCBD. The main objective of this code is to spot these issues not included in the status map.
 
  - SRC FILE:
-clustermap-display.cxx
+ `clustermap-display.cxx`
 
 - INPUT FILES (see the following readme (x) for more info to understand how they are produced):
-DATA_QC.root
-MC_QC.root
-o2sim_geometry-aligned.root
+`DATA_QC.root`
+`MC_QC.root`
+`o2sim_geometry-aligned.root`
 
-============================================================================
  - HELP MESSAGE TO KNOW WHICH OPTIONS ARE AVAILABLE:
 ```shell
-$
+
 o2-mch-clustermap-display --help
-$
+
 ```
 
  - EXECUTION COMMAND:
 
 ```shell
-$
+
 o2-mch-clustermap-display --green --normperarea --rootfileleft DATA_QC.root --rootfileright 100mil.root --help
-$
+
 ```
-============================================================================
 
   - OUTPUT FILES:
 
