@@ -8,6 +8,8 @@
 
 # Aligned Geometry File:
 
+- Simulation to obtain the alignement of the muon spectrometer:
+
 ```shell
 
 o2-sim-serial --timestamp 1663632000000 -n 10 -g fwmugen -m HALL MAG DIPO COMP PIPE ABSO SHIL MCH MID
@@ -39,7 +41,7 @@ DIGITS (this can be done locally with O2 Enviroment):
 ```
 
 
-RECONSTRUCTION (this can be done locally  with QC Environment):
+MC RECONSTRUCTION (this can be done locally  with QC Environment):
 
 ```shell
 
@@ -53,6 +55,7 @@ o2-mch-reco-workflow -b | o2-qc --config json://./qc-mch-clusters.json --local-b
 
 # Data File
 
+DATA RECONSTRUCTION (this can be done locally  with QC Environment):
 
 ```shell
 
