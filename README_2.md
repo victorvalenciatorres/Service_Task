@@ -1,4 +1,4 @@
-# HOW TO GET THE INPUT FILES
+# INPUT FILES FOR MCH CLUSTER MAPS
  INPUT FILES:
  `o2sim_geometry-aligned.root`
  `MC_QC.root`
@@ -6,7 +6,7 @@
 
 
 
-# Aligned Geometry File:
+# Aligned Geometry File
 
 - Simulation to obtain the alignement of the muon spectrometer:
 
