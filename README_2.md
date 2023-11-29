@@ -6,7 +6,7 @@
 
 
 
-# Aligned Geometry File
+## Aligned Geometry File
 
 - Simulation to obtain the alignement of the muon spectrometer:
 
@@ -18,7 +18,7 @@ o2-sim-serial --timestamp 1663632000000 -n 10 -g fwmugen -m HALL MAG DIPO COMP P
 - The output file produced: `o2sim_geometry-aligned.root`
 
 
-# MC file
+## MC file
 SIMULATIONS:
 - Go to lxplus : `ssh -X youlogin@lxplus.cern.ch`
 - Source the environment : `source /cvmfs/alice-nightlies.cern.ch/bin/alienv enter VO_ALICE@O2sim::v20230413-1`
@@ -53,7 +53,7 @@ o2-mch-reco-workflow -b | o2-qc --config json://./qc-mch-clusters.json --local-b
 - The output file produced: `MC_QC.root`
 
 
-# Data File
+## Data File
 
 DATA RECONSTRUCTION (this can be done locally  with QC Environment):
 
